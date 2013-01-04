@@ -3,6 +3,8 @@
 #include "pointergrid.h"
 #include "dynar.h"
 #include "store.h"
+#include "vec3d.h"
+#include "draw.h"
 
 /* A maze is a single "level" or "dungeon" in EKQ and other dungeon crawlers. 
  * A maze consists of a 3D beam-shaped grid of cubical spacesor "cells" for 
@@ -55,6 +57,7 @@ struct MazeCell_ {
   int                   flags;
   int                   x;
   int                   y;
+  int                   visible;
 };
 
 struct MazeFloor_ {
@@ -81,6 +84,7 @@ MazeCell * mazecell_init(MazeCell * me, int x, int y) {
   for (index = 0; index < MAZECELL_WALLS; index++) {
     me->walls[index].used = 0;
   }
+  me->visible = 0;
   return me;
 }
 
@@ -221,6 +225,10 @@ MazeWall * mazecell_get_wall(MazeCell * cell, int dir) {
   return cell->walls + dir;
 }
 
+MazeCell * maze_get_cell(Maze * me, int z, int x, int y) {
+  return mazefloor_get_cell(maze_get_floor(me, z), x , y);
+}
+
 MazeWall * mazefloor_get_wall(MazeFloor * floor, int x, int y, int dir) {
   MazeCell * cell = mazefloor_get_cell(floor, x, y);
   return mazecell_get_wall(cell, dir);
@@ -239,11 +247,13 @@ MazeWall * mazewall_set_texture(MazeWall * wall, int texture) {
 
 MazeWall * maze_add_wall(Maze * me, int z, int x, int y, int dir, int type, int texture) {
   MazeWall * wall = maze_get_wall(me, z, x, y, dir);
+  MazeCell * cell = maze_get_cell(me, z, x, y); 
   if (!wall) return NULL;
   wall->used         = !0;
   wall->type         = type;
   wall->direction    = dir;
   mazewall_set_texture(wall, texture);
+  cell->visible      = !0;
   return wall;
 }
 
@@ -268,7 +278,118 @@ MazeWall * maze_set_wall_item(Maze * me, int x, int y, int z , int dir, int id, 
   return wall;  
 }
 
+int mazefloor_get_width(MazeFloor * me) {
+  if (!me) return -1;
+  return pointergrid_w(me->cells);
+}
 
+int mazefloor_get_depth(MazeFloor * me) {
+  if (!me) return -1;
+  return pointergrid_h(me->cells);
+}
+
+/** Table of rotations per direction of the wall to draw. */
+Rot3d mazewall_rotations[MAZECELL_WALLS] = {
+  { 0.0                     , 0.0                     , 0.0 },
+  { ALLEGRO_PI / 2.0        , 0.0                     , 0.0 },
+  { ALLEGRO_PI              , 0.0                     , 0.0 },
+  { 3.0 * ALLEGRO_PI / 2.0  , 0.0                     , 0.0 },
+  { 0.0                     , ALLEGRO_PI / 2.0        , 0.0 },
+  { 0.0                     , 3.0 * ALLEGRO_PI / 2.0  , 0.0 },
+  { 0.0                     , 7.0 * ALLEGRO_PI / 4.0  , 0.0 },
+  { ALLEGRO_PI / 2.0        , 7.0 * ALLEGRO_PI / 4.0  , 0.0 },
+  { ALLEGRO_PI              , 7.0 * ALLEGRO_PI / 4.0  , 0.0 },
+  { 3.0 * ALLEGRO_PI / 2.0  , 7.0 * ALLEGRO_PI / 4.0  , 0.0 },
+};
+
+
+/** Table of extra translations per direction of wall to draw. */
+Vec3d mazewall_translations[MAZECELL_WALLS] = {
+  { 0.0                     , 0.0                     , 0.0 },
+  { 2.0                     , 0.0                     , 0.0 },
+  { 0.0                     , 0.0                     , 2.0 },
+  { 0.0                     , 0.0                     , 0.0 },
+  { 0.0                     , 2.0                     , 0.0 },
+  { 0.0                     , 0.0                     , 2.0 },
+  { 0.0                     , 0.0                     , 0.0 },
+  { 2.0                     , 0.0                     , 0.0 },
+  { 0.0                     , 0.0                     , 2.0 },
+  { 0.0                     , 0.0                     , 0.0 },  
+};
+
+
+
+void mazewall_draw(MazeWall * wall, int z, int x, int y, int dir) {
+  int index;
+  ALLEGRO_TRANSFORM camera, model;
+  const ALLEGRO_TRANSFORM * now;
+  ALLEGRO_COLOR colors[4];
+  Rot3d * rot;
+  Vec3d * tra;
+  for (index = 0; index < 4; index++) {
+    colors[index] = al_map_rgb(255,255,255);
+  }
+  
+  rot = mazewall_rotations + dir;
+  tra = mazewall_translations + dir;
+  
+  /* Get the current transform and use it as the camera transform.  */
+  now = al_get_current_transform();
+  al_copy_transform(&camera, now);
+  al_identity_transform(&model);
+  al_rotate_transform_3d(&model, 0, 0, 1, rot->rz);
+  al_rotate_transform_3d(&model, 0, 1, 0, rot->ry);
+  al_rotate_transform_3d(&model, 1, 0, 0, rot->rx);
+  /* swap of y and z is intentional! */  
+  al_translate_transform_3d(&model, x * 2.0, z * 2.0, y * 2.0);
+  al_translate_transform_3d(&model, tra->x, tra->y, tra->z);
+  
+  /* Compose the wall's transform with the camera transform. */
+  al_compose_transform(&model, &camera);
+  al_use_transform(&model);
+  /* swap of y and z is intentional! */
+  draw_wall(0.0, 0.0, 0.0, 2.0, 2.0, colors, wall->texture_bmp);
+
+  /* Restore the camera transform. */
+  al_use_transform(&camera);
+}
+
+
+void mazecell_draw(MazeCell * me, int z, int x, int y) {
+  int index;
+  if (!me) return;
+  if (!me->visible) return;
+  for (index = 0; index < MAZECELL_WALLS; index++) {
+    mazewall_draw(mazecell_get_wall(me, index), z, x, y, index);
+  }
+}
+
+void mazefloor_draw(MazeFloor * me, int z) {
+  int i, j;
+  int stopi, stopj;
+  if (!me) return;
+  stopi = mazefloor_get_width(me);
+  stopj = mazefloor_get_depth(me);
+  for (i = 0; i < stopi ; i++) {
+    for (j = 0; j < stopj ; j++) {
+      mazecell_draw(mazefloor_get_cell(me, i, j), z, i, j);
+    }
+  }
+}
+
+int maze_get_height(Maze * me) {
+  if (!me) return -1;
+  return dynar_size(me->floors);
+}
+
+void maze_draw(Maze * me) {
+  MazeFloor floor;
+  int index, stop;
+  stop = maze_get_height(me);
+  for (index = 0; index < stop; index++) {
+    mazefloor_draw(maze_get_floor(me, index), index);
+  } 
+}
 
 
 
