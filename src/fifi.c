@@ -6,7 +6,7 @@
 #include "monolog.h"
 
 /* Fifi contain functionality that helps finding back the file resouces,
-such as images, music, etc that Eruta needs.
+such as images, music, etc that EKQ needs.
 
 An important concept here is the "virtual path", that is the path under the 
 location of the data directory. So, for example, if the data of the 
@@ -53,7 +53,7 @@ ALLEGRO_EXENAME_PATH: ~/src/eruta/bin/eruta
 RESOURCES_PATH: /usr/local/var/arch/bjmey/dl/varia/allegro-5.0.5/examples/
 TEMP_PATH: /tmp/
 USER_DATA_PATH: /home/bjmey/.local/share/liballeg.org/ex_get_path/
-
+eru
 */
 
 /** Helper for al_path_cstr. */
@@ -91,9 +91,9 @@ static ALLEGRO_PATH * fifi_find_data_path(void) {
   // ALLEGRO_RESOURCES_PATH/../data (Local install, linux-ish)
   al_replace_path_component(path, -1, "data");
   if(PATH_EXISTS(path)) return path;
-  // ALLEGRO_RESOURCES_PATH/../share/eruta/data (global linux-ish install)
+  // ALLEGRO_RESOURCES_PATH/../share/ekq/data (global linux-ish install)
   al_replace_path_component(path, -1, "share");
-  al_append_path_component(path, "eruta");
+  al_append_path_component(path, "ekq");
   al_append_path_component(path, "data");
   if(PATH_EXISTS(path)) return path;
   al_destroy_path(path);

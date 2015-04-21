@@ -8,7 +8,7 @@ else
 endif
 
 
-# Source files of Eruta
+# Source files of EKQ
 SRC_FILES =  src/alps.c
 SRC_FILES += src/area.c
 SRC_FILES += src/bad.c
@@ -94,7 +94,7 @@ LDFLAGS = -L /usr/local/lib $(ALLEGRO_LIBS) $(MRUBY_LIBS) -lm
 
 : foreach $(SRC_FILES) |> !cc |>  build/%B.o {objects}
 : $(MAIN_FILE) |> !cc |>  build/%B.o {main}
-: {objects} {main} |> !ld |> bin/eruta
+: {objects} {main} |> !ld |> bin/ekq
 
 # ^ LINK %f ^
 

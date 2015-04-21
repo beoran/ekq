@@ -500,7 +500,7 @@ State * state_init(State * self, BOOL fullscreen) {
 
   // Initialize loggers
   monolog_add_logger(NULL, &state_stderr_logger);
-  monolog_add_logger(fopen("eruta.log", "a"), &state_file_logger);
+  monolog_add_logger(fopen("eqk.log", "a"), &state_file_logger);
   // initialize log levels
   LOG_ENABLE_ERROR();
   LOG_ENABLE_WARNING();
