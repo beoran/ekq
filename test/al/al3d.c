@@ -14,25 +14,61 @@ void init_vertex(ALLEGRO_VERTEX * vertex, float x, float y, float z, float u, fl
   vertex->color = al_map_rgba_f(r, g , b, a);
 }
 
+void init_vertex_color(ALLEGRO_VERTEX * vertex, float x, float y, float z, float u, float v, ALLEGRO_COLOR color) {
+  vertex->x = x;
+  vertex->y = y; 
+  vertex->z = z;
+  vertex->u = u;
+  vertex->v = v;
+  vertex->color = color;
+}
+
+
+void draw_textured_colored_rectangle_3d(
+  float x, float y, float z, float w, float h, float d, float up, float vp,
+  ALLEGRO_BITMAP * texture,  ALLEGRO_COLOR color) {
+    float u, v;
+    float tw, th;
+    ALLEGRO_VERTEX p[4];
+    if (texture) {
+      tw = al_get_bitmap_width(texture);
+      th = al_get_bitmap_height(texture);
+      u  = tw * up;
+      v  = th * vp;
+    } else {
+      u = v = 0.0f;
+    }
+    
+    init_vertex_color(p+0, x    , y     ,  z    ,   0,   0, color);
+    init_vertex_color(p+1, x    , y + h ,  z + d,   0,   v, color);
+    init_vertex_color(p+2, x + w, y + h ,  z + d,   u,   v, color);
+    init_vertex_color(p+3, x + w, y + h ,  z    ,   u,   0, color);
+    al_draw_prim(p, NULL, texture, 0, 4, ALLEGRO_PRIM_TRIANGLE_FAN);
+}
+
+
 int main(void) {
-  ALLEGRO_VERTEX    v[4];
+  ALLEGRO_VERTEX        v[8];
   ALLEGRO_DISPLAY     * display;
   ALLEGRO_TRANSFORM     perst;
   ALLEGRO_TRANSFORM     camt;
-  ALLEGRO_BITMAP      * texture;
+  ALLEGRO_BITMAP      * texture, * texture2;
   ALLEGRO_EVENT_QUEUE * queue;
   ALLEGRO_EVENT         event;
   ALLEGRO_FONT        * font;
-  int                   busy = 1;
-  float                 cx   = -100;
-  float                 cy   = 100;
-  float                 cz   = -100;
-  int                   face = 0; 
-  int                   hori = 0;
-  float                 angle= 0;
-  float                 theta= 0;  
-  float                 near = 100;
-  float                 far  = 10000;
+  int                   busy  = 1;
+  float                 cx    = -128;
+  float                 cy    = 256; // 128;
+  float                 cz    = -128;
+  int                   face  = 0; 
+  int                   hori  = 0;
+  float                 angle = 0;
+  float                 theta = 0;  
+  float                 near  = 2;
+  float                 far   = 8192;
+  float                 zoom  = 1;
+  float                 scale = 1.0;
+  float                 us    = 256; 
   
   al_init();  
   al_init_image_addon();
@@ -41,10 +77,15 @@ int main(void) {
   font  = al_create_builtin_font();
   
   queue = al_create_event_queue();  
+/*  
+  al_set_new_display_option(ALLEGRO_DEPTH_SIZE, 16, ALLEGRO_SUGGEST);
+*/  
   
-  display = al_create_display(640, 480);
+  display  = al_create_display(640, 480);
   al_register_event_source(queue, al_get_keyboard_event_source());  
-  texture = al_load_bitmap("tile_1.png");
+  texture  = al_load_bitmap("tile_1.png");
+  texture2 = al_load_bitmap("tile_2.png");
+  
   printf("texture %p\n", texture);
   
   /* Allegro coordinates: +Y is down, +X is to the right, 
@@ -52,33 +93,50 @@ int main(void) {
    * 
    */
   
-  while (busy) {
-    init_vertex(v+0,    0,  0,   0,    0,    0, 1, 0, 0, 1);
-    init_vertex(v+1,    0,  0, 200,    0,  256, 0, 1, 0, 1);
-    init_vertex(v+2,  200,  0, 200,  256,  256, 0, 0, 1, 1);
-    init_vertex(v+3,  200,  0,  0,  256,    0, 1, 1, 0, 1);
   
-    al_identity_transform(&perst);
-    al_perspective_transform(&perst, -320, -240, 64, 320, near, far);
+  while (busy) {
+    init_vertex(v+0,   0,   0,   0,   0,   0, 1, 0, 0, 1);
+    init_vertex(v+1,   0,   0,  us,   0, 256, 0, 1, 0, 1);
+    init_vertex(v+2,  us,   0,  us, 256, 256, 0, 0, 1, 1);
+    init_vertex(v+3,  us,   0,   0, 256,   0, 1, 1, 0, 1);
+    init_vertex(v+4,  us, -us,   0, 256, 256, 1, 0, 1, 1);
+    init_vertex(v+5,   0, -us,   0, 256,   0, 0, 1, 1, 1); 
+    init_vertex(v+6,   0, -us,  us, 256, 256, 0, 0, 0, 1); 
+    init_vertex(v+7,   0,   0,  us,   0, 256, 1, 1, 1, 1); 
+  
+  
     al_identity_transform(&camt);
+    al_scale_transform_3d(&camt, scale, scale, scale);
     al_translate_transform_3d(&camt, cx, cy, cz);
-    angle = face * 0.25 * ALLEGRO_PI;
+  
+    angle = face * 0.125 * ALLEGRO_PI;
     al_rotate_transform_3d(&camt, 0, -1, 0, angle); 
-    theta = hori * 0.25 * ALLEGRO_PI;
-    al_rotate_transform_3d(&camt, -1, 0, 0, angle); 
-
-            
-    al_set_projection_transform(display, &perst);
+    theta = hori * 0.125 * ALLEGRO_PI;
+    al_rotate_transform_3d(&camt, -1, 0, 0, theta); 
+    
     al_use_transform(&camt);
-    
-    
+    // al_set_projection_transform(display, &perst);
+
+
+    // al_clear_depth_buffer(far);
+  
     al_clear_to_color(al_map_rgb_f(0.75, 0.75, 0.95));
-    al_draw_filled_rectangle(10, 20, 30, 40, al_map_rgb_f(0, 0.25, 0.25));
-    
-    al_draw_prim(v, NULL, texture, 0, 4, ALLEGRO_PRIM_TRIANGLE_FAN);
+    al_draw_filled_rectangle(0, 0, 200, 200, al_map_rgb_f(0, 0.25, 0.25));
     
     al_identity_transform(&perst);
-    al_orthographic_transform(&perst, 0, 0, -1, 640, 480, 1);
+    al_perspective_transform(&perst, -2.0 * zoom, -1.6 * zoom, near, 
+                                      2.0 * zoom,  1.4 * zoom, far);
+    al_set_projection_transform(display, &perst);
+    
+        
+    al_draw_prim(v, NULL, texture, 0, 8, ALLEGRO_PRIM_TRIANGLE_FAN);
+    draw_textured_colored_rectangle_3d(0 , -us, 0, us, us, 0, 
+                                       1.0, 1.0, texture2, al_map_rgb_f(1,1,1));
+    
+    
+    
+    al_identity_transform(&perst);
+    al_orthographic_transform(&perst, 0, 0, 0, 640, 480, 1);
  
     al_identity_transform(&camt);
     al_set_projection_transform(display, &perst);
@@ -87,8 +145,8 @@ int main(void) {
 
     
     al_draw_multiline_textf(font, al_map_rgb_f(1,1,1), 10, 10, 620, 0, 0,
-      "Coords: (%f %f %f)\nAngle: (%f %f)\nView: [%f %f]", 
-               cx, cy, cz,        angle, hori,   near, far); 
+      "Coords: (%f %f %f)\nAngle: (%f %f)\nView: [%f %f %f %f]\nScale: %f", 
+               cx, cy, cz,        angle, theta,   near, far, zoom, scale); 
     
     
     
@@ -98,27 +156,27 @@ int main(void) {
     if (event.type == ALLEGRO_EVENT_KEY_DOWN) { 
       switch (event.keyboard.keycode) {
         case ALLEGRO_KEY_RIGHT:
-          cx += 10;
+          cx += 8;
           break;
 
         case ALLEGRO_KEY_LEFT:
-          cx -= 10;
+          cx -= 8;
           break;
           
         case ALLEGRO_KEY_UP:
-          cy += 10;
+          cy += 8;
           break;
           
         case ALLEGRO_KEY_DOWN:
-          cy -= 10;
+          cy -= 8;
           break;  
         
         case ALLEGRO_KEY_HOME:
-          cz += 10;
+          cz += 8;
           break;
           
         case ALLEGRO_KEY_END:
-          cz -= 10;
+          cz -= 8;
           break;  
           
         case ALLEGRO_KEY_R:
@@ -139,21 +197,36 @@ int main(void) {
   
           
         case ALLEGRO_KEY_N:
-          near += 10;
+          near *= 2.0;
           break;
           
         case ALLEGRO_KEY_M:
-          near -= 10;
+          near /= 2.0;
           break;
 
         case ALLEGRO_KEY_F:
-          far += 1000;
+          far += 64;
           break;
           
         case ALLEGRO_KEY_V:
-          far -= 1000;
+          far -= 64;
           break;
         
+        case ALLEGRO_KEY_Z:
+          zoom *= 2.0f;
+          break;
+          
+        case ALLEGRO_KEY_S:
+          zoom /= 2.0f;
+          break;
+        
+        case ALLEGRO_KEY_A:
+          scale *= 2.0f;
+          break;
+          
+        case ALLEGRO_KEY_Q:
+          scale /= 2.0f;
+          break;
           
         case ALLEGRO_KEY_ESCAPE:
           busy = 0 ;
@@ -164,6 +237,10 @@ int main(void) {
       }
     }
   }
+  
+  al_destroy_bitmap(texture);
+  al_destroy_bitmap(texture2);
+  
   
   return 0;  
 }
