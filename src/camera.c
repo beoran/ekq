@@ -202,17 +202,39 @@ Camera * camera_free(Camera * self) {
   return NULL;
 }
 
-
 /** Initializes a camera. */
-Camera * camera_init(Camera * self, float x, float y, float w, float h) {
+Camera * camera_init(Camera * self, Vec3d at, Vec3d look, Point size, float fov) {
   if(!self) return NULL;
-  self->box     = rebox_new(x, y, w, h);
-  self->speed.x = 0;
-  self->speed.y = 0;
-  self->panners = NULL;
-  self->lockins = NULL;
-  self->track   = NULL;
+  self->position      = at;
+  self->size          = size;
+  self->look          = look;
+  self->up            = vec3d(0, 1, 0);
+  self->field_of_view = fow;
+  self->speed         = vec3d(0, 0, 0);
+  self->torque        = vec3d(0, 0, 0);
+  self->flags         = 0;
+  camera_update(self);
   return self;
+}
+
+                                      
+Camera * camera_new(Vec3d at, Vec3d look, Point size, float fov);
+
+Camera * camera_debugprint (Camera * self);
+
+/** Applies the camera's position and point of view transformation. */
+void camera_apply_view(Camera * self) {
+  al_use_transform(&self->camera_transform);
+}
+
+/** Applies a perspective transformation */
+void camera_apply_perspective(Camera * self, ALLEGRO_DISPLAY * display) {
+  al_use_projection_transform(&self->perspective_transform);
+}
+
+/** Applies an orthographic transformation for the UI. */
+void camera_apply_orthographic(Camera * self, ALLEGRO_DISPLAY * display) {
+  al_use_projection_transform(&self->orthographic_transform);
 }
 
 /** Alocates a new camera. */
@@ -221,415 +243,133 @@ Camera * camera_new(float x, float y, float w, float h) {
   return camera_init(self, x, y, w, h);
 }
 
-/** Sets the object to be tracked. 
-This object is not owned by camera. Pass in NULL to disable tracking. */
-Thing * camera_track_(Camera * self, Thing * track) {
-  if(!self) return NULL;
-  self->track = track;
-  if (self->track) {
-    camera_unsetflag(self, CAMERA_NOPAN);
-  } else {
-    camera_setflag(self, CAMERA_NOPAN);
-  }
-  return self->track;
-}
-
-/** Returns nonzero if the camera is panning,
-false if not */
-int camera_panning_p(Camera * self) {
-  Panner * panner;
-  if(!self) return FALSE;
-  if(!self->panners) return FALSE;
-  if(camera_flag(self, CAMERA_NOPAN)) return FALSE;
-  return TRUE;
-}
-
-/** Retuns nonzero if the camera is limited by lockins, 
-false if not. */
-int camera_lockin_p(Camera * self) {
-  if(!self) return FALSE;
-  if(!self->lockins) return FALSE;
-  if(camera_flag(self, CAMERA_NOLOCKIN)) return FALSE;
-  return TRUE;
-}
-
-/** Returns nonzero if the camera must track a Thing, zero if not. */
-int camera_tracking_p(Camera * self) {
-  if(!self) return FALSE;
-  if(!self->track) return FALSE;
-  if(camera_flag(self, CAMERA_NOTRACK)) return FALSE;
-  return TRUE;
-}
-
-/* Lock on tracking*/
-int camera_applylockedtracking(Camera *self) {
-  // TODO: correct with half width and half height
-  camera_center_(self, thing_p(self->track));
-  return 1;
-}
-
-#define CAMERA_TRACK_RATIO  0.8
-
-/* Regular tracking */
-int camera_applynormaltracking(Camera *self) {
-  double tracklimitx, tracklimity; 
-  Thing * thing = self->track;
-  tracklimitx   = camera_w(self) * CAMERA_TRACK_RATIO;  
-  tracklimity   = camera_h(self) * CAMERA_TRACK_RATIO;
-  // TODO: correct with half width and half height
-  camera_centerdelta_(self, thing_p(thing), tracklimitx, tracklimity);
-  return 0;
-}
-
-/* Tracks the active object. */
-int camera_applytracking(Camera *self) {
-  if(!camera_tracking_p(self)) return -1;
-  if(camera_flag(self, CAMERA_TRACKLOCK)) { 
-    return camera_applylockedtracking(self);
-  }
-  return camera_applynormaltracking(self);
-}
-
-/** Applies the currently active panner to the camera. 
-*/
-int camera_applypanners(Camera * self) {
-  Point delta;
-  Point vspeed;
-  Panner * panner;
-  float speed, length;
-  float ratio;
-  if(!camera_panning_p(self)) return -1;
-  /* Immediate panning. */
-  panner = &self->panners->panner;
-  if (panner_flag(panner, PANNER_IMMEDIATE)) {
-    camera_center_(self, panner->goal);
-    camera_freetoppanner(self);
-    return 0;
-  }
-  /**/
-  
-  delta = bevec_sub(camera_center(self), panner->goal);
-  /* Delta has the OPPOSITE direction or angle in which 
-  the camera has to scroll, however, normally delta will be 
-  bigger than the speed of the panning. We only have to move 
-  a fraction of that delta, at least as long 
-  as the length of delta is bigger than the speed */
-  length      = bevec_length(delta);
-  if (length < 1.0) {
-    /* Less than one pixel to move, the goal has been reached. */
-    camera_center_(self, panner->goal);
-    camera_freetoppanner(self);
-    return 0;
-  }
-  
-  if (length < panner->speed) { 
-    speed     = length;
-  } else {
-    speed     = panner->speed;
-  }
-  /* Ensure negative speed is not possible.  */
-  if(speed <= 0.0) { speed = 1.0; }
-
-  /* Construct the speed vector, it has the same angle as the 
-  OPPOSITE of the delta vector, so that is why the magnitude 
-  is the negative of the needed speed. */
-  vspeed      = bevec_forangle(bevec_toangle(delta)); 
-  self->speed = bevec_mult(vspeed, -speed); 
-  return 1;  
-}
-
-/* Applies the current active lockin to the camera. */
-int camera_applylockins(Camera * self) {
-  Lockin * lockin;
-  double dx, dy;
-  Point delta;
-  if(!camera_lockin_p(self)) return -1;
-  lockin = &self->lockins->lockin;
-  if(rebox_inside_p(&lockin->box, &self->box)) {
-      /* The camera is inside the lockin box, so it's ok. */
-    return -1;
-  }
-  dx          = rebox_delta_x(&lockin->box, &self->box);
-  dy          = rebox_delta_y(&lockin->box, &self->box);
-  delta       = bevec(dx, dy);
-  self->box.at= bevec_add(self->box.at, delta);
-  if(dx != 0.0) self->speed.x = 0.0;
-  if(dy != 0.0) self->speed.y = 0.0; 
-  return 0;
-}
-
 /** Updates the camera. */
-Camera * camera_update(Camera * self) {
-  /* Apply the camera's panners, and only track if no panning occurred. 
-  Obviously, tracking and panning should be mutually exclusive. */
-  if(camera_applypanners(self) <= 0) {
-    camera_applytracking(self);
-  }
-  /* Apply the lockins, that limit the camera's motion. */
-  camera_applylockins(self);
+Camera * camera_update(Camera * self, double dt) {
+   
+   double dw = self->size.x;
+   double dh = self->size.y;
+   double  f = tan(self->field_of_view / 2.0);
+   
+   /* Set up orthograĥic transform for UI, etc. */
+   al_identity_transform(&self->orthographic_transform);
+   al_orthographic_transform(&self->orthographic_transform, 0, 0, -1, dw, dh, 1);
+  
+   /* Perspective transform for the main screen 3D view. */
+   al_identity_transform(&self->perspective_transform);
+   /* Back up camera a bit. */
+   al_translate_transform_3d(&self->perspective_transform, 0, 0, -1);
+   /* Set up a nice 3D view. */
+   al_perspective_transform(&self->perspective_transform, 
+      -1 * dw / dh *f, f, 1, f * dw / dh, -f, 1000);
+   );
+  
+  /* Set up the camera's position and view transform. */
+   al_build_camera_transform(&self->camera_transform, 
+      self.position.x, self.position.y, self.position.z,
+      self.look.x    , self.look.y    , self.look.z    ,
+      self.up.x      , self.up.y      , self.up.z      );
+     
+    
   /* Finally move at the set speed. */
-  camera_at_(self, bevec_add(camera_at(self), self->speed));
+  self->position = bevec_add(self->position, bevec_mul(self->speed, dt));
   return self;
-}
+ }
 
-Rebox * camera_rebox(Camera * self) {
- return &self->box;
-}
-
-/** Return position of camera top left corner. */
-Point camera_at(Camera * self) {
-  return rebox_at(camera_rebox(self));
-}
-
-/** Return position of camera bottom top left corner. */
-Point camera_br(Camera * self) {
-  return rebox_br(camera_rebox(self));
+/** Return position of camera center. */
+Vec3d camera_at(Camera * self) {
+  return self->position;
 }
 
 /** Sets position by individual components. */
-Point camera_at_x_(Camera * self, float x) {
-  return rebox_x_(camera_rebox(self), x);
+Vec3d camera_at_x_(Camera * self, float x) {
+  self->position.x = x;
+  return self->position;
 }
 
 /** Sets position by individual components. */
-Point camera_at_y_(Camera * self, float y) {
-  return rebox_y_(camera_rebox(self), y);
+Vec3d camera_at_y_(Camera * self, float y) {
+  self->position.y = y;
+  return self->position;
 }
-
 
 /** Sets position by individual components. */
-Point camera_at_xy_(Camera * self, float x, float y) {
-  return rebox_xy_(camera_rebox(self), x, y);
+Vec3d camera_at_z_(Camera * self, float z) {
+  self->position.z = z;
+  return self->position;
 }
 
-/** Sets position. */
-Point camera_at_(Camera * self, Point at) {
-  return rebox_at_(camera_rebox(self), at);
+/** Sets position of camera. */
+Vec3d camera_at_(Camera * self, Vec3d at) {
+  return self->position  = at;
 }
 
+/** Sets position by individual components. */
+Vec3d camera_at_xyz_(Camera * self, float x, float y, float z) {
+  return self->position = vec3d(x, y, z);
+}
 
-/** Return x position of camera top left corner. */
+/** Return x position of camera's position. */
 float camera_at_x(Camera * self) {
-  return rebox_x(camera_rebox(self));
+  return  self->position.x;
 }
 
-
-/** Return y position of camera top left corner. */
+/** Return x position of camera's position. */
 float camera_at_y(Camera * self) {
-  return rebox_y(camera_rebox(self));
+  return  self->position.y;
 }
 
-/** Return width of camera view. */
+/** Return x position of camera's position. */
+float camera_at_z(Camera * self) {
+  return  self->position.z;
+}
+
+/** Return width of the camera's screen size. */
 float camera_w(Camera * self) {
-  return rebox_w(camera_rebox(self));
+  return self->size.x;
 }
 
-/** Return height of camera view. */
+/** Return height of the camera's screen size. */
 float camera_h(Camera * self) {
-  return rebox_h(camera_rebox(self));
-}
-
-/** Return x position of camera bottom right corner. */
-float camera_br_x(Camera * self) {
-  return rebox_br_x(camera_rebox(self));
-}
-
-/** Return y position of camera bottom right corner. */
-float camera_br_y(Camera * self) {
-  return rebox_br_y(camera_rebox(self));
-}
-
-/** Return x position of camera view center. */
-float camera_center_x(Camera * self) {
-  return rebox_center_x(camera_rebox(self));
-}
-
-/** Return y position of camera bottom center */
-float camera_center_y(Camera * self) {
-  return rebox_center_y(camera_rebox(self));
-}
-
-/** Return position of camera view center. */
-Point camera_center(Camera * self) {
-  return rebox_center(camera_rebox(self));
-}
-
-
-/** Sets position of center of camera to center. */
-Point camera_center_(Camera * self, Point center) {
-  return rebox_center_(camera_rebox(self), center);
-}
-
-/** Adjusts the position of center of camera to center if new center 
-nears the borders of the camer view within the given deltas. */
-Point 
-camera_centerdelta_(Camera * self, Point newcenter, float deltax, float deltay){
-  double dx, dy, minx, miny, maxx, maxy;
-  Point movecenter;
-  Point movement;  
-  Thing * thing   = self->track;
-  double tx       = thing_cx(thing);
-  double ty       = thing_cy(thing);
-  
-  Point oldcenter = camera_center(self);
-  Point vdelta    = bevec_sub(oldcenter, newcenter);
-  movecenter      = oldcenter;
-  deltax          = 128.0;
-  deltay          = 128.0;  
-  minx            = camera_at_x(self) + deltax;
-  maxx            = camera_br_x(self) - deltax;
-  miny            = camera_at_y(self) + deltay;
-  maxy            = camera_br_y(self) - deltay;
-  
-  if (tx < minx) { 
-    movecenter.x  = oldcenter.x - minx + tx;  
-  } else if (tx > maxx) {
-    movecenter.x  = oldcenter.x + tx - maxx;  
-  } 
-
-  if (ty < miny) { 
-    movecenter.y  = oldcenter.y - miny + ty;  
-  } else if (ty > maxy) {
-    movecenter.y  = oldcenter.y + ty - maxy;  
-  }
-  
-  
-  return camera_center_(self, movecenter);
+  return self->size.y;
 }
 
 
 /** Modifies speed by individual components. */
-Point camera_speed_deltaxy(Camera * self, float dx, float dy) {
+Vec3d camera_speed_delta_xyz(Camera * self, float dx, float dy, float dz) {
   self->speed.x += dx;
   self->speed.y += dy;
+  self->speed.z += dz; 
   return self->speed;
 }
 
 /** Sets speed by individual components. */
-Point camera_speed_xy_(Camera * self, float x, float y) {
+Vec3d camera_speed_xyz_(Camera * self, float x, float y, float z) {
   self->speed.x = x;
   self->speed.y = y;
+  self->speed.z = z;  
   return self->speed;
 }
 
 /**  Gets speed. */
-Point camera_speed(Camera * self) {  
+Vec3d camera_speed(Camera * self) {  
   return self->speed;
 }
 
 /** Sets speed.  */
-Point camera_speed_(Camera * self, Point speed) {
+Vec3d camera_speed_(Camera * self, Vec3d speed) {
   self->speed = speed;
   return self->speed;
 }
 
-/** Prints camera description for debug to the log. */
-Camera * camera_debugprint(Camera * self) {
-  if(!self) { puts("Camera is NULL!"); return NULL; }
-  LOG("Camera at (%f, %f), size (%f, %f), speed(%f, %f)\n",
-        camera_at_x(self), camera_at_y(self), camera_w(self),  camera_h(self),
-        camera_speed(self).x,  camera_speed(self).y);
-  return self;
+/** Gets rotation speed. */
+Rot3d camera_torque(Camera * self) {  
+  return self->torque;
 }
 
-/** Adds a new panner to the camera. Returns it, or NULL if some 
-error occurred, */
-Panner * camera_newpanner(Camera * self, Point goal, float speed, int immediate) {
-  PannerList * pannernode;
-  if(!self) return NULL;
-  pannernode = pannerlist_new(goal, speed, immediate);
-  if(!pannernode) return NULL;
-  if(!self->panners) {
-    self->panners = pannernode;
-  } else {
-    inli_push(&self->panners->list, &pannernode->list);
-  }
-  return &pannernode->panner;  
-} 
-
-/** Removes the topmost panner and frees it. 
-Does nothing if no panners are installed. 
-Return new topmost panner list or null if it was the last. */
-Panner * camera_freetoppanner(Camera * self) {
-  Inli       * nextlist;
-  PannerList * nextpannerlist;
-  if((!self) || (!self->panners)) return NULL;
-  nextlist       = inli_next(&self->panners->list);
-  nextpannerlist = INLI_LISTDATA(nextlist, PannerList);
-  pannerlist_free(self->panners);
-  self->panners  = nextpannerlist;
-  if(!self->panners) return NULL;
-  return &self->panners->panner;
+/** Sets rotation speed.  */
+Rot3d camera_torque_(Camera * self, Rot3d speed) {
+  self->torque = speed;
+  return self->torque;
 }
-
-/** Empty the camera's list of panners. */
-void camera_freepanners(Camera * self) {
-  while(camera_freetoppanner(self));
-  self->panners = NULL;
-}
-
-/** Adds a new lockin to the camera. Returns it, or NULL if some 
-error occurred, */
-Lockin * camera_newlockin(Camera * self, float x, float y, float w, float h) {
-  LockinList * lockinnode;
-  if(!self) return NULL;
-  lockinnode = lockinlist_new(x, y, w, h);
-  if(!lockinnode) return NULL;
-  if(!self->lockins) {
-    self->lockins = lockinnode;
-  } else {
-    inli_push(&self->lockins->list, &lockinnode->list);
-  }
-  return &lockinnode->lockin;  
-} 
-
-/** Removes the topmost lockin and frees it. 
-Does nothing if no lockins are installed. 
-Return new topmost lockin list or null if it was the last. */
-Lockin * camera_freetoplockin(Camera * self) {
-  Inli       * nextlist;
-  LockinList * nextlockinlist;
-  if((!self) || (!self->lockins)) return NULL;
-  nextlist       = inli_next(&self->lockins->list);
-  nextlockinlist = INLI_LISTDATA(nextlist, LockinList);
-  lockinlist_free(self->lockins);
-  self->lockins  = nextlockinlist;
-  if(!self->lockins) return NULL;
-  return &self->lockins->lockin;
-}
-
-/** Empty the camera's list of lockins. */
-void camera_freelockins(Camera * self) {
-  while(camera_freetoplockin(self));
-  self->lockins = NULL;
-}
-
-
-/** Returns true if an object at x, y with the given bounds w and h will 
-be visible to this camera, false if not. */
-int camera_cansee(Camera * self, int x, int y, int w, int h) {
-  // not visible if too far to the left or bottom
-  if (x     > camera_br_x(self)) return FALSE;
-  if (y     > camera_br_y(self)) return FALSE;
-  if ((x+w) < camera_at_x(self)) return FALSE;  
-  if ((y+h) < camera_at_y(self)) return FALSE;
-  return TRUE;
-}
-
-
-/* Transforms "world" (ie area/tilemap/level) coordinates to 
- * screen/camera coordinates. 
- */
-Point camera_worldtoscreen(Camera * self, Point world_pos) {
-  return bevec_sub(world_pos, self->box.at);
-}
-
-/* Transforms screen/camera coordinates to "world" (ie area/tilemap/level) 
- * coordinates. 
- */
-Point camera_screentoworld(Camera * self, Point screen_pos) {
-  return bevec_sub(screen_pos, self->box.at);
-}
-
 
 

@@ -154,11 +154,6 @@ Tilemap * state_active_map_(State * state, Tilemap * map) {
     area_tilemap_(state->area, map);
   }      
   
-  if (state->camera) { 
-    camera_freepanners(state->camera);
-    camera_freelockins(state->camera);
-  }
-  
   state->active_map = map;
   
   if(state->active_map) {
