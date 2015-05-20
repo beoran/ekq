@@ -4,20 +4,14 @@
 #include "state.h"
 #include "react.h"
 #include "image.h"
-#include "tile.h"
-#include "tilepane.h"
-#include "tilemap.h"
-#include "tileio.h"
 #include "sound.h"
 #include "silut.h"
 #include "fifi.h"
 #include "ui.h"
-#include "hatab.h"
 /* #include "beo.h" */
 #include "assert.h"
 #include "str.h"
 #include "sprite.h"
-#include "alps.h"
 #include "store.h"
 #include "scegra.h"
 #include "callrb.h"
@@ -110,18 +104,12 @@ React * main_react_key_up(React * self, ALLEGRO_KEYBOARD_EVENT * event) {
 int real_main(void) {
   Image    * border   = NULL;
   Image    * sheet    = NULL;
-  Tileset  * tileset  = NULL;
-  Tile     * tile     = NULL;
   State    * state    = NULL;
   Camera   * camera   = NULL;
-  Tilepane * tilepane = NULL;
-  Tilemap  * map      = NULL;
-  Thing    * actor    = NULL;
   Tracker  * tracker          = NULL;
   Tracker  * maptracker       = NULL;
   Sprite   * sprite           = NULL;
   SpriteState * spritestate   = NULL;
-  AlpsShower shower;
   int        actor_id         = -1;
   int        sprite_id        = -1;
   int        npc1_id          = -1;
@@ -129,7 +117,6 @@ int real_main(void) {
   
   
   React    react;
-  ALLEGRO_COLOR myblack = {0.0, 0.0, 0.0, 1.0};
     
   state = state_alloc();
   state_set(state); 
@@ -138,8 +125,6 @@ int real_main(void) {
     return 1;
   }
   
-  alpsshower_init(&shower, state_camera(state), 100, 1.0, bevec(10.0, 10000.0));
-
   /* Initializes the reactor, the game state is it's data. */
   react_initempty(&react, state);
   react.keyboard_key_up   = main_react_key_up;
@@ -155,12 +140,9 @@ int real_main(void) {
     
   /* Main game loop, controlled by the State object. */  
   while(state_busy(state)) { 
-      Point spritenow = bevec(100, 120); 
       react_poll(&react, state);
-      alpsshower_update(&shower, state_frametime(state));
       state_update(state);
       state_draw(state);
-      /* alpsshower_draw(&shower, camera); */ 
       state_flip_display(state);
    }
    state_done(state);

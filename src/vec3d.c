@@ -13,7 +13,7 @@ Vec3d vec3d(double x, double y, double z) {
   return result;
 }
 
-Vec3d vec3d_0() { 
+Vec3d vec3d_0(void) { 
   return vec3d(0.0, 0.0, 0.0);
 }
 
@@ -237,8 +237,8 @@ Rot3d   rot3d(double rx, double ry, double rz) {
   return result;
 }
 
-Rot3d   rot3d_0() {
-  return rot3d(0, 0, 0):
+Rot3d rot3d_0(void) {
+  return rot3d(0, 0, 0);
 }
 
 Rot3d   rot3d_add(Rot3d r1, Rot3d r2) {
@@ -250,7 +250,7 @@ Rot3d   rot3d_sub(Rot3d r1, Rot3d r2)  {
 }
   
 Rot3d   rot3d_mul(Rot3d r1, double factor)  {
-  return rot3d(r1.rx * angle, r1.ry * angle, r1.rz * angle);
+  return rot3d(r1.rx * factor, r1.ry * factor, r1.rz * factor);
 }
 
 Rot3d vec3d_rot3d(Vec3d v1) {    

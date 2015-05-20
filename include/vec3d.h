@@ -18,7 +18,7 @@ typedef struct Rot3d_         Rot3d;
 struct Rot3d_  {  double rx, ry, rz;  };
 
 Vec3d   vec3d(double x, double y, double z);
-Vec3d   vec3d_0();
+Vec3d   vec3d_0(void);
 Vec3d   vec3d_add(Vec3d v1, Vec3d v2);
 Vec3d   vec3d_sub(Vec3d v1, Vec3d v2);
 Vec3d   vec3d_mul(Vec3d v1, double factor);
@@ -62,7 +62,7 @@ Vec3d vec3d_cross(Vec3d self, Vec3d other);
 
 
 Rot3d   rot3d(double rx, double ry, double rz);
-Rot3d   rot3d_0();
+Rot3d   rot3d_0(void);
 Rot3d   rot3d_add(Rot3d r1, Rot3d r2);
 Rot3d   rot3d_sub(Rot3d r1, Rot3d r2);
 Rot3d   rot3d_mul(Rot3d r1, double factor);

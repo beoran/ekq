@@ -1,7 +1,7 @@
 
 
 # some more OO wrappers for the low level thing functionality
-class Thing < Eruta::Thing
+class Thing
   extend Registry 
   
   attr_reader   :id

@@ -161,12 +161,6 @@ store_load_other(int index, const char* vpath, ResorKind kind, ResorLoader* load
   return store_put(index, resor_load_other(vpath, kind, loader, destroy, extra));
 }
 
-/* Loads a tile map and puts it in the storage. */
-Resor * store_load_tilemap(int index, const char * vpath) {
-  return store_put(index, xresor_load_tilemap(vpath, NULL));
-}
-
-
 /* Returns the kind of stored item. */
 int store_kind(int index) {
   return resor_kind(store_get(index));

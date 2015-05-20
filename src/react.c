@@ -1,7 +1,6 @@
 
 #include "eruta.h"
 #include "event.h"
-#include "mode.h"
 #include "state.h"
 #include "react.h"
 #include "widget.h"

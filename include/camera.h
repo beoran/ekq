@@ -40,17 +40,13 @@ int camera_flag (Camera * self , int flag );
 
 Camera * camera_done (Camera * self );
 Camera * camera_free (Camera * self );
-Camera * camera_init(Camera * self  , float x    , float y    , float z, 
-                                      float angle, float theta,
-                                      float near , float far  ,
-                                      float w    , float h );
-                                      
-Camera * camera_new(float x    , float y    , float z, 
-                                 float angle, float theta,
-                                 float near , float far  ,
-                                 float w     , float h);
 
-Camera * camera_update (Camera * self );
+Camera * camera_init(Camera * self, Vec3d at, Vec3d look, Point size, float fov);
+
+                                      
+Camera * camera_new(Vec3d at, Vec3d look, Point size, float fov);
+
+Camera * camera_update (Camera * self, double dt);
 
 Vec3d camera_at (Camera * self );
 Vec3d camera_at_x_ (Camera * self , float x );
@@ -71,8 +67,8 @@ float camera_theta(Camera * self);
 float camera_w(Camera * self);
 float camera_h(Camera * self);
 
-Vec3d camera_speed_delta(Camera * self , float dx , float dy, float dz, float dangle, float dtheta);
-Vec3d camera_speed_xyz_ (Camera * self , float x , float y, float z, float angle, float theta);
+Vec3d camera_speed_delta(Camera * self , float dx , float dy, float dz);
+Vec3d camera_speed_xyz_ (Camera * self , float x , float y, float z);
 Vec3d camera_speed (Camera * self );
 Vec3d camera_speed_ (Camera * self , Vec3d speed );
 Camera * camera_debugprint (Camera * self);

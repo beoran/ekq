@@ -5,160 +5,6 @@
 #include "flags.h"
 #include "monolog.h"
 
-/* 
-
-Ideas about camera tracking, panning and limiting.
-
-Normally the camera tracks or follows a single mobile Thing.
-Normally, the thing is only tracked if it goes out of
-sight of the camera. However, it is also possible to lock 
-on to the Thing exactly so the camera moves completely with 
-it. 
-
-It's possible to change the thing that is being tracked. 
-This transition can be immediate or smooth. The speed
-of this transition can be set.
-
-Sometimes the camera pans around. It moves it's center between 
-a list of goal points. This motion can be immediate or smooth.
-The speed of this transition may be set. Panning has priority
-over tracking. It may be a good idea to implement
-the transition between two things as immediate, but set up a panning
-from the old thing's position to the new thing's one. 
-
-On top of that, the motion of the camera is limited by 
-the limits of the current tile map, and possibly
-by special tiles that prevent the camera to pan or 
-scroll or track past them. 
-
-These map limits may be disabled individually in any 4 directions,
-The effect of the scroll lock tiles may be also be disbled.
-
-Finally, the camera may be completely locked in to place. 
-This could be used, for example, in battle mode.
-
-*/
-
-/** Sets an individual flag on the Panner. */
-int panner_setflag(Panner * self, int flag) {
-  return flags_set(&self->flags, flag);
-}
-
-/** Unsets an individual flag on the Panner. */
-int panner_unsetflag(Panner * self, int flag) {
-  register int wflags = self->flags;
-  return flags_unset(&self->flags, flag);
-}
-
-/** Sets or unsets an individual flag on the Panner. 
-If set is true the flag is set, if false it's unset. */
-int panner_flag_(Panner * self, int flag, int set) {
-  return flags_put(&self->flags, flag, set);
-}
-
-/** Checks if an individual flag is set. */
-int panner_flag(Panner * self, int flag) {
-  return flags_get(self->flags, flag);
-}
-
-#define PANNER_SPEED_DEFAULT 10.0
-
-/** Initializes a panner and sets it to be active. If speed is negative
-or zero it will be replaced by 10.0 */
-Panner * panner_init(Panner * self, Point goal, float speed, int immediate) {
-  if(!self) return NULL;
-  self->goal  = goal;
-  self->speed = speed;
-  if(self->speed <= 0) { self->speed = PANNER_SPEED_DEFAULT; }
-  panner_flag_(self, PANNER_IMMEDIATE, immediate);
-  panner_flag_(self, PANNER_ACTIVE, true);
-  return self;
-}
-
-/** Cleans up a panner after use. */
-Panner * panner_done(Panner * self) {
-  if(!self) return NULL;
-  self->goal  = bevec0();
-  self->speed = 0.0;
-  return self;
-}
-
-
-/** Allocates a new panner list node. */
-PannerList * pannerlist_new(Point goal, float speed, int immediate) {
-  PannerList * self = STRUCT_ALLOC(PannerList);
-  panner_init(&self->panner, goal, speed, immediate);
-  inli_init(&self->list);
-  return self;
-}
-
-/** Frees a panner list node, also removes it from 
-the intrusive list it was in if that was the case.*/ 
-PannerList * pannerlist_free(PannerList * self) {
-  if (!self) { return NULL ; }
-  inli_remove(&self->list);
-  panner_done(&self->panner);
-  return mem_free(self);
-}
-
-/** Frees all nodes of a PannerList */
-PannerList * pannerlist_freeall(PannerList * self) {
-  PannerList * index, * next;
-  index = self;
-  while (index) {
-    Inli * nextlist = inli_next(&index->list);
-    next = INLI_LISTDATA(nextlist, PannerList);
-    pannerlist_free(index);
-    index = next;
-  }
-  return NULL;
-}
-
-/** Initializes a lockin and sets it to be active.  */
-Lockin * lockin_init(Lockin * self, float x, float y, float w, float h) {
-  if(!self) return NULL;
-  self->box   = rebox_new(x, y, w, h);
-  self->flags = LOCKIN_ACTIVE;
-  return self;
-}
-
-/** Cleans up a lockin after use. */
-Lockin * lockin_done(Lockin * self) {
-  if(!self) return NULL;
-  self->flags = 0;
-  return self;
-}
-
-
-/** Allocates a new lockin list node. */
-LockinList * lockinlist_new(float x, float y, float w, float h) {
-  LockinList * self = STRUCT_ALLOC(LockinList);
-  lockin_init(&self->lockin, x, y, w, h);
-  inli_init(&self->list);
-  return self;
-}
-
-/** Frees a lockin list node, also removes it from 
-the intrusive list it was in if that was the case.*/ 
-LockinList * lockinlist_free(LockinList * self) {
-  if (!self) { return NULL; }
-  inli_remove(&self->list);
-  lockin_done(&self->lockin);
-  return mem_free(self);
-}
-
-/** Frees all nodes of a LockinList */
-LockinList * lockinlist_freeall(LockinList * self) {
-  LockinList * index, * next;
-  index = self;
-  while (index) {
-    Inli * nextlist = inli_next(&index->list);
-    next = INLI_LISTDATA(nextlist, LockinList);
-    lockinlist_free(index);
-    index = next;
-  }
-  return NULL;
-}
 
 /** Sets an individual flag on the Camera. */
 int camera_setflag(Camera * self, int flag) {
@@ -190,8 +36,6 @@ Camera * camera_alloc() {
 /** Cleans up a camera. */
 Camera * camera_done(Camera * self) {
   if(!self) { return NULL; } 
-  camera_freelockins(self);
-  camera_freepanners(self);
   return self;
 }
 
@@ -209,16 +53,21 @@ Camera * camera_init(Camera * self, Vec3d at, Vec3d look, Point size, float fov)
   self->size          = size;
   self->look          = look;
   self->up            = vec3d(0, 1, 0);
-  self->field_of_view = fow;
+  self->field_of_view = fov;
   self->speed         = vec3d(0, 0, 0);
-  self->torque        = vec3d(0, 0, 0);
+  self->torque        = rot3d(0, 0, 0);
   self->flags         = 0;
-  camera_update(self);
+  self->theta         = 0.0;
+  self->alpha         = 0.0;
+  camera_update(self, 0.0);
   return self;
 }
 
-                                      
-Camera * camera_new(Vec3d at, Vec3d look, Point size, float fov);
+/** Alocates a new camera. */                                      
+Camera * camera_new(Vec3d at, Vec3d look, Point size, float fov) {
+  Camera * me = camera_alloc();
+  return camera_init(me, at, look, size, fov);
+}
 
 Camera * camera_debugprint (Camera * self);
 
@@ -237,11 +86,6 @@ void camera_apply_orthographic(Camera * self, ALLEGRO_DISPLAY * display) {
   al_use_projection_transform(&self->orthographic_transform);
 }
 
-/** Alocates a new camera. */
-Camera * camera_new(float x, float y, float w, float h) {
-  Camera * self = camera_alloc();
-  return camera_init(self, x, y, w, h);
-}
 
 /** Updates the camera. */
 Camera * camera_update(Camera * self, double dt) {
@@ -257,21 +101,29 @@ Camera * camera_update(Camera * self, double dt) {
    /* Perspective transform for the main screen 3D view. */
    al_identity_transform(&self->perspective_transform);
    /* Back up camera a bit. */
-   al_translate_transform_3d(&self->perspective_transform, 0, 0, -1);
+   /*al_translate_transform_3d(&self->perspective_transform, 0, 0, -1);*/
    /* Set up a nice 3D view. */
    al_perspective_transform(&self->perspective_transform, 
       -1 * dw / dh *f, f, 1, f * dw / dh, -f, 1000);
-   );
   
   /* Set up the camera's position and view transform. */
-   al_build_camera_transform(&self->camera_transform, 
-      self.position.x, self.position.y, self.position.z,
-      self.look.x    , self.look.y    , self.look.z    ,
-      self.up.x      , self.up.y      , self.up.z      );
+  /*  al_build_camera_transform(&self->camera_transform, 
+      self->position.x, self->position.y, self->position.z,
+      self->look.x    , self->look.y    , self->look.z    ,
+      self->up.x      , self->up.y      , self->up.z      );
      
-    
+  */  
+  
+  al_identity_transform(&self->camera_transform);
+  al_translate_transform_3d(&self->camera_transform, 
+      self->position.x, self->position.y, self->position.z);
+  
+  al_rotate_transform_3d(&self->camera_transform, 0, -1, 0, self->alpha); 
+  al_rotate_transform_3d(&self->camera_transform, -1, 0, 0, self->theta); 
+
+  
   /* Finally move at the set speed. */
-  self->position = bevec_add(self->position, bevec_mul(self->speed, dt));
+  self->position = vec3d_add(self->position, vec3d_mul(self->speed, dt));
   return self;
  }
 
@@ -370,6 +222,26 @@ Rot3d camera_torque(Camera * self) {
 Rot3d camera_torque_(Camera * self, Rot3d speed) {
   self->torque = speed;
   return self->torque;
+}
+
+/** Gets alpha angle of camera */
+float camera_alpha(Camera * self) {  
+  return self->alpha;
+}
+
+/** Sets alpha angle of camera.  */
+float camera_alpha_(Camera * self, float alpha) {
+  return self->alpha = alpha;
+}
+
+/** Gets theta angle of camera.  */
+float camera_theta(Camera * self) {
+  return self->theta;
+}
+
+/** Sets theta angle of camera.  */
+float camera_theta_(Camera * self, float theta) {
+  return self->theta = theta;
 }
 
 

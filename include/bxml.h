@@ -3,7 +3,6 @@
 
 
 #include "str.h"
-#include "ifa.h"
 
 /*
 * Kind of the BXML node. Can be : ATTR, TEXT, TAG.

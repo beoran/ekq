@@ -7,11 +7,11 @@ typedef struct State_ State;
 
 
 #include "eruta.h"
-#include "tilemap.h"
-#include "mode.h"
 #include "rh.h"
+#include "camera.h"
 #include "sprite.h"
 #include "spritelist.h"
+
 
 #define STATE_COLORS   16
 #define STATE_BLACK   0
@@ -22,8 +22,6 @@ typedef struct State_ State;
 
 State * state_get(void);
 State * state_set (State * state );
-Tilemap * state_nowmap (State * state );
-Tilemap * state_loadmap (State * state );
 State * state_alloc(void);
 void state_free (State * self );
 State * state_errmsg_ (State * state , char * mesg );
@@ -59,15 +57,7 @@ int state_sprite_load_builtin
 int state_sprite_tintlayer
 (State * state, int sprite_index, int layer_index, int, int g, int b, int a);
 
-Area * state_area(State * state);
-SpriteList * state_sprites(State * state);
-
-
-Thing * state_thing(State * state, int index);
-
-Thing * state_newthing(State * state, int kind, 
-                        int x, int y, int z, int w, int h);
-                        
+                       
 int state_newthingindex(State * state, int kind, 
                         int x, int y, int z, int w, int h);
 
@@ -87,7 +77,6 @@ int state_thing_pose_(State * state, int thing_index, int pose);
 int state_thing_direction_(State * state, int thing_index, int direction);
 
 int state_actorindex_(State * self, int thing_index);
-Thing * state_actor(State * self);
 
 int state_active_map_id(State * state);
 int state_active_map_id_(State * state, int index);

@@ -3,7 +3,6 @@
 
 #include "vec3d.h"
 #include "inli.h"
-#include "thing.h"
 
 /** The Camera is one (or more if using split screen) of the
 * rectangular views that the player has on the game world.
@@ -21,9 +20,13 @@ struct Camera_ {
   /* Position of vector. */
   Vec3d                 position;
   /* Direction camera is looking at. */
-  Vec3d                 direction;
+  Vec3d                 look;
   /* Up vector of the world. */
   Vec3d                 up;
+  /* Angle around Y axis. */
+  float                 alpha;
+  /* Angle around X axis. */
+  float                theta;
   /* Vertical field of view in radians. */
   double                field_of_view; 
   /* Speed of motion. */

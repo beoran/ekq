@@ -3,18 +3,13 @@
 #include "state.h"
 #include "camera.h"
 #include "sound.h"
-#include "tilemap.h"
-#include "tileio.h"
 #include "dynar.h"
 #include "draw.h"
-#include "mode.h"
 #include "fifi.h"
 #include "rh.h"
 #include "toruby.h"
 #include "event.h"
 #include "widget.h"
-#include "area.h"
-#include "thing.h"
 #include "sprite.h"
 #include "scegra.h"
 #include "monolog.h"
@@ -61,9 +56,8 @@ struct State_ {
   ALLEGRO_COLOR         background_color;
   
   
-  /* Active tile map, linked from and loaded through a Store ID. */
-  Tilemap             * active_map; 
-  int                   active_map_id;
+  /* Active maze, linked from and loaded through a Store ID. */
+  int                   active_maze_id;
   
   /* Does the area needs to be displayed or not. */
   int                   show_area;
@@ -74,8 +68,6 @@ struct State_ {
   /* Does the FPS counter needs to be displayed or not? */
   int                   show_fps;
   
-  /* Logical and physical game objects. This one is always active, regardless of the tile map. */
-  Area                * area;
   // View camera for the area, tile map and particle engine. 
   Camera              * camera;
   
@@ -89,10 +81,7 @@ struct State_ {
    The ruby and error message GUI console.
    Implemented in C so it's usable even if there are script bugs.   
   */
-  BBConsole           * console;   
-  /* The current actor, controlled by the player. */
-  Thing               * actor;
-
+  BBConsole           * console;
   
 };
 
@@ -137,65 +126,6 @@ State * state_set(State * state) {
   return oldstate;
 }
 
-/** Returns the state's active tile map. */
-Tilemap * state_active_map(State * state) {
-  if(!state) return NULL;
-  return state->active_map;
-}
-
-
-/** Sets the state's active tile map. Also sets it in the state's area, and
-  disables all previous camera panners and lockins, and sets up a basic lockin on 
-  map layer 0 if the map is not NULL. */
-Tilemap * state_active_map_(State * state, Tilemap * map) {
-  if(!state) return NULL;
-  
-  if (state->area) {
-    area_tilemap_(state->area, map);
-  }      
-  
-  state->active_map = map;
-  
-  if(state->active_map) {
-    tilemap_layer_lockin(state->active_map, 0, state->camera);
-  }
-  
-  return state->active_map;
-}
-
-/** Gets the store index of the state's active tile map, or -1 if none set. */
-int state_active_map_id(State * state) {
-  if(!state) return -1;  
-  return state->active_map_id;
-}
-
-
-/** Sets the state's active tile from the Store system index. 
- * Returns negative on failure, or the index set. Disables the active tile map if index is < 0 */
-int state_active_map_id_(State * state, int index) {
-  Tilemap * map;
-  if (!state) return -1;  
-  if (index < 0) {
-    state->active_map_id = -1;
-    state_active_map_(state, NULL);
-    return -1;
-  }
-  map = store_get_other(index, RESOR_TILEMAP);
-  if (!map) {
-    // refuse to load nonexisting map
-    return -2;
-  }
-  state_active_map_(state, map);
-  return -1;
-}
-
-
-
-/** Returns the state's area. */
-Area * state_area(State * state) {
-  if (!state) return NULL;
-  return state->area;
-}
 
 /** Return's the state's sprite list */
 SpriteList * state_sprites(State * state) {
@@ -217,11 +147,6 @@ void state_free(State * self) {
   
   spritelist_free(self->sprites);
   self->sprites = NULL;
-  area_free(self->area);
-  self->area    = NULL;
-  /* Disable the active tile map */
-  state_active_map_id_(self, -1);
-  
   rh_free(self->ruby);
   bbconsole_free((BBWidget *)self->console, NULL);
   self->console = NULL; /* disable console immediately. */
@@ -307,88 +232,18 @@ int state_sprite_load_builtin
     state_sprites(state), sprite_index, layer_index, vpath, layout
   );
 }
-
-/*  Gets a thing from the state's area. */
-Thing * state_thing(State * state, int index) {
-  Area * area = state_area(state);
-  return area_thing(area, index);
-}
-
-/* Makes a new dynamic thing in the state's active area. */
-Thing * state_newthing(State * state, int kind, 
-                        int x, int y, int z, int w, int h) {
-  Area * area = state_area(state);
-  return area_new_thing(area, kind, x, y, z, w, h);
-}
-
-/* Makes a new dynamic thing and returns it's index, or 
- negative if it could not be created. */
-int state_newthingindex(State * state, int kind, 
-                        int x, int y, int z, int w, int h) {
  
-  Area * area = state_area(state);
-  return area_new_thing_id(area, kind, x, y, z, w, h);
-}
-
-
-/* Looks op both the Thing and the Sprite by index and 
- * links the Thing to the Sprite. Returns the sprite index set or negative on error.
- * Both sprite and thing must already exist for this to work. 
- */
-int state_thing_sprite_(State * state, int thing_index, int sprite_index) {
-  Thing * thing; Sprite * sprite;
-  thing  = state_thing(state, thing_index);
-  if (!thing) { return -1; } 
-  sprite = state_sprite(state, sprite_index);
-  if (!sprite) { return -2; }
-  thing_sprite_(thing, sprite);
-  return sprite_index;
-}
-
-/* Looks up the thing by index and set it's pose. Returns negative on error, 
- or if sucessful, the pose set. */
-int state_thing_pose_(State * state, int thing_index, int pose) {
-  Thing * thing;
-  thing = state_thing(state, thing_index);
-  if(!thing) return -1;
-  thing_pose_(thing, pose);
-  return pose;
-}
- 
-/* Looks up the thing by index and set it's direction. Returns negative on error, 
- or if sucessful, the direction set. */
-int state_thing_direction_(State * state, int thing_index, int direction) {
-  Thing * thing;
-  thing = state_thing(state, thing_index);
-  if(!thing) return -1;
-  thing_direction_(thing, direction);
-  return direction;
-}
  
 /* Looks up the thing by index and let the state's camera track it. 
  * If index is negative, stop tracking in stead.
  */
 int state_camera_track_(State * state, int thing_index) {
-  Thing * thing;
-  if (thing_index < 0) {
-    camera_track_(state_camera(state), NULL);
-    return -2;
-  }  
-  thing = state_thing(state, thing_index);
-  if(!thing) return -1;
-  camera_track_(state_camera(state), thing);
-  thing_direction_(thing, thing_index);
-  return thing_index;
+  return -3;
 }
 
 
 /* Sets up the state's camera to track the numbered thing. */
 int state_cameratrackthing(State * state, int thing_index) {
-  Thing * thing = state_thing(state, thing_index);
-  if (thing) {
-    camera_track_(state_camera(state), thing);
-  return 0;
-  }
   return -1;
 }
 
@@ -396,12 +251,7 @@ int state_cameratrackthing(State * state, int thing_index) {
  * Returns negative if no tile map is currently active. 
  */
 int state_lockin_maplayer(State * state, int layer) {  
-  if(!state_active_map(state)) {
-    return -1;
-  } else { 
-    tilemap_layer_lockin(state_active_map(state), layer, state_camera(state));
-  }
-  return 0; 
+  return -1;
 }
 
 
@@ -553,11 +403,22 @@ State * state_init(State * self, BOOL fullscreen) {
     /* flags = ALLEGRO_FULLSCREEN_WINDOW | ALLEGRO_GENERATE_EXPOSE_EVENTS; */
   }
   // flags |= ALLEGRO_OPENGL;
+  
+  /* Set up the usage of smoothing and of a depth buffer. */ 
+  al_set_new_display_option(ALLEGRO_SAMPLE_BUFFERS, 1, ALLEGRO_SUGGEST);
+  al_set_new_display_option(ALLEGRO_SAMPLES, 8, ALLEGRO_SUGGEST);
+  al_set_new_display_option(ALLEGRO_DEPTH_SIZE, 16, ALLEGRO_SUGGEST);
+  
+  // al_set_new_display_flags(ALLEGRO_RESIZABLE);
+   
  
   al_set_new_display_flags(flags);
  /*  al_set_new_display_option(ALLEGRO_VSYNC, 2, ALLEGRO_SUGGEST); */
   // Create a window to display things on: 640x480 pixels.
   // self->display = al_create_display(1280, 960);
+  
+  
+  
   self->display = al_create_display(SCREEN_W, SCREEN_H);
   if (!self->display) {
     return state_errmsg_(self, "Error creating display.\n");
@@ -606,14 +467,16 @@ State * state_init(State * self, BOOL fullscreen) {
   self->fps        = 60.0;
   self->fpstime    = al_get_time();
   self->frames     = 60;    
-  /* No active map yet. */
-  state_active_map_id_(self, -1);
+  /* No active maze yet. */
+  /* state_active_maze_id_(self, -1); */
   
   /* Background color. */
   self->background_color = al_map_rgb(64,128,64);
   
   // set up camera
-  self->camera = camera_new(-100, -100, SCREEN_W, SCREEN_H);
+  self->camera = camera_new(vec3d(0, 0, -1), vec3d(0, 0, 1),
+                            bevec(SCREEN_W, SCREEN_H), 45);
+  
   if(!self->camera) {
       return state_errmsg_(self, "Out of memory when allocating camera.");
   }
@@ -634,9 +497,6 @@ State * state_init(State * self, BOOL fullscreen) {
   // set up logging to console
   monolog_add_logger(self->console, &state_console_logger);
 
-  
-  /* Initialize Area. */
-  self->area = area_new();
   
   /* Initialize sprite list. */
   self->sprites = spritelist_new();
@@ -697,50 +557,110 @@ void state_scale_display(State * self) {
    
 }
 
+void draw_test_3d(void) {
+  ALLEGRO_COLOR red = al_map_rgb(255, 0, 0);
+  ALLEGRO_COLOR yellow = al_map_rgb(255, 255, 0);
+  
+  ALLEGRO_VERTEX p[3] = { 
+    {  10,  20,  0,  0, 0, red },
+    {  10,  10,  0,  0, 0, red },
+    {  20,  20,  0,  0, 0, red },
+    
+  };
+    
+  al_draw_prim(p, NULL, NULL, 0, 3, ALLEGRO_PRIM_TRIANGLE_LIST);
+  al_draw_filled_rectangle(400, 400, 440, 450, yellow);
+  
+}
+
+void draw_test_2d(void) {
+  ALLEGRO_COLOR blue = al_map_rgb(0, 0, 255);
+  
+  ALLEGRO_VERTEX p[3] = { 
+    {  150,  250,  0,  0, 0, blue },
+    {  150,  150,  0,  0, 0, blue },
+    {  250,  250,  0,  0, 0, blue },
+    
+  };
+    
+  al_draw_prim(p, NULL, NULL, 0, 3, ALLEGRO_PRIM_TRIANGLE_LIST);
+}
+
+
 
 /* Draws all inside the state that needs to be drawn. */
 void state_draw(State * self) {
-    int layer;
-    
-    /* Draw background color if no map active. */
-    if (!self->active_map) {
-      al_clear_to_color(self->background_color);
-    }    
-    
-    /* Draw the layers of the map and area interleaved. */
-    for (layer = 0; layer < TILEMAP_PANES; layer++) {
-      if (self->active_map) {
-        /* Shadows should be drawn *before* the blends, otherwise both won't
-         * look good when combined with each other. The problem with that is,
-         * though that shadows are then not cast on the sprites.
-         * Perhaps sprites will need separate shadows???
-         */
-        tilemap_draw_layer_tiles(self->active_map, self->camera, layer);
-        tilemap_draw_layer_shadows(self->active_map, self->camera, layer);
-        tilemap_draw_layer_blends(self->active_map, self->camera, layer);
-      }
-      if (self->area && self->show_area) {
-        area_draw_layer(self->area, self->camera, layer);        
-      }
-    }
-    
-    /* Draw UI scene graph */
-    if (self->show_graph) { 
-      scegra_draw();
-    }
-    /* Draw the particles from the particle engine. */
-    // alpsshower_draw(&shower, state_camera(state));
-    
-    
-    /* Draw fps if needed.  */
-    if (self->show_fps) { 
-      al_draw_textf(state_font(self), COLOR_WHITE,
-                        10, 10, 0, "FPS: %.0f", state_fps(self));
-    } 
-    
-    /* Draw the console (will autohide if not active). */
-    bbwidget_draw((BBWidget *)state_console(self));
-    state_scale_display(self);
+  int layer;
+  ALLEGRO_TRANSFORM normal_transform;
+  ALLEGRO_TRANSFORM normal_view;
+  ALLEGRO_TRANSFORM persp, camt;
+  double dw, dh, f;
+  dw = 640;
+  dh = 480;
+  f  = 0.5;
+
+  normal_transform = *(al_get_current_projection_transform());
+  normal_view      = *(al_get_current_transform());
+  
+  camera_apply_view(&self->camera_transform);
+
+  // camera_apply_perspective(state_camera(self), NULL);
+
+  /* Use and clear depth buffer. */
+  al_set_render_state(ALLEGRO_DEPTH_TEST, 1);
+  al_clear_depth_buffer(10000);
+
+
+  al_identity_transform(&persp);
+  /* Back up camera a bit. */
+  /*al_translate_transform_3d(&self->perspective_transform, 0, 0, -1);*/
+  /* Set up a nice 3D view. */
+  al_identity_transform(&camt);
+   al_translate_transform_3d(&camt, 0, 0, 0);
+  // al_use_transform(&camt);
+   
+  /* Draw background color. */
+  al_clear_to_color(self->background_color);
+
+
+  al_perspective_transform(&persp, -320, -240, 1, 320, 240, 10000);
+  // al_perspective_transform(&persp, -1 * dw / dh *f, f, 1, f * dw / dh, -f, 1000);
+  al_use_projection_transform(&persp);
+
+  draw_test_3d();
+  // draw_test_2d();
+   
+  al_use_projection_transform(&normal_transform); 
+  al_use_transform(&normal_view);
+  /* Disable depth test for UI. */
+  al_set_render_state(ALLEGRO_DEPTH_TEST, 0);
+  
+  // al_draw_filled_rectangle(0, 100, 200, 300, al_map_rgb(50, 100, 150));
+
+  
+  /* Draw 2D UI scene graph */
+  if (self->show_graph) { 
+    scegra_draw();
+  }
+  /* Draw the particles from the particle engine. */
+  // alpsshower_draw(&shower, state_camera(state));
+  // draw_test_2d();
+  
+  /* Draw fps if needed.  */
+  if (self->show_fps) { 
+    al_draw_textf(state_font(self), COLOR_WHITE,
+                      10, 10, 0, "FPS: %.0f", state_fps(self));
+                      
+    al_draw_textf(state_font(self), COLOR_WHITE,
+                      10, 20, 0, "Cam: %f %f %f", 
+                      camera_at_x(self->camera),
+                      camera_at_y(self->camera),
+                      camera_at_z(self->camera));
+  } 
+  
+  /* Draw the console (will autohide if not active). */
+  bbwidget_draw((BBWidget *)state_console(self));
+  state_scale_display(self); /* XXX: will this work for 3D projection??? */
 }
 
 
@@ -755,15 +675,7 @@ void state_update(State * self) {
   mrb_value mval;
   // alpsshower_update(&shower, state_frametime(state));    
   
-  if (self->active_map) { 
-    tilemap_update(self->active_map, state_frametime(self));
-  }
-  
-  if (self->area) {
-      area_update(self->area, state_frametime(self));
-  }
-  
-  camera_update(self->camera);
+  camera_update(self->camera, state_frametime(self));
   // call ruby update callback 
   callrb_on_update(self);
   // Update the scene graph (after the Ruby upate so anty ruby side-changes take 
@@ -890,22 +802,6 @@ int global_state_show_area_(int show) {
   return state->show_area = show;
 }
 
-/* Get display state of physics */
-int global_state_show_physics() {
-  State * state = state_get();
-  if (!state) return FALSE;
-  return area_draw_physics(state->area);
-}
-
-/* Set display state of physics */
-int global_state_show_physics_(int show) {
-  State * state = state_get();
-  if (!state) return FALSE;
-  area_draw_physics_(state->area, show);
-  return show;
-}
-
-
 /* Core functionality of Eruta, implemented on the state. */
 
 /* Ideas about starting the game and progressing
@@ -952,16 +848,6 @@ Tilemap * state_preloadmap_index(State * state, int index) {
 }
 */
 
-/* Tints a layer of the sprite that belongs to a thing.*/
-int state_thing_tint_layer
-(State * state, int thing_index, int layer_index, int r, int g, int b, int a) {
-  Thing       * thing  = state_thing(state, thing_index);
-  Color color   = al_map_rgba(r, g, b, a);
-  if (!thing) { return -1; }
-  thing_tint_layer(thing, layer_index, color);  
-  return 0;
-}
-
 
 /* Transforms a mask color of an image in storage into an alpha. */
 int state_image_mask_to_alpha(State * state, int store_index, int r, int g, int b) {
@@ -986,11 +872,6 @@ int state_image_average_to_alpha(State * state, int store_index, int r, int g, i
   return store_index;
 }
 
-/* Returns the first unused thing ID that is greater than minimum. */
-int state_get_unused_thing_id() {
-  return area_get_unused_thing_id(state_area(state_get()));
-}
-
 /* Returns the first unused sprite ID that is greater than minimum. */
 int state_get_unused_sprite_id() {
   return spritelist_get_unused_sprite_id(state_sprites(state_get()));
@@ -1001,9 +882,5 @@ int state_delete_sprite(int index) {
   return spritelist_delete_sprite(state_sprites(state_get()), index);
 }
 
-/** Deletes a thing from the things of the state's area. */
-int state_delete_thing(int index) {
-  return area_delete_thing(state_area(state_get()), index);
-}
 
 

@@ -115,17 +115,6 @@ static mrb_value tr_store_load_ttf_font_stretch(mrb_state * mrb, mrb_value self)
   );
 }
 
-static mrb_value tr_store_load_tilemap(mrb_state * mrb, mrb_value self) {
-  char * vpath     = NULL; 
-  mrb_int index    = -1;
-  mrb_int h        = 10;  
-  mrb_int flags    =  0;
-  (void) self;
-
-  mrb_get_args(mrb, "iz", &index, &vpath);  
-  return rh_bool_value(store_load_tilemap(index, (const char *)vpath));
-}
-
 
 static mrb_value tr_store_drop(mrb_state * mrb, mrb_value self) {
   mrb_int index    = -1;
@@ -271,7 +260,6 @@ static mrb_value tr_store_grab_font(mrb_state * mrb, mrb_value self) {
 /* Allows to set a color of a loaded image as the mask color. Somewhat slow. */
 static mrb_value tr_image_mask_to_alpha(mrb_state * mrb, mrb_value self) {
   State * state    = state_get();
-  Thing * thing    = NULL;
   BeVec result;
   int store_index, r, g, b;
   mrb_int thingid; mrb_float x, y;
@@ -285,7 +273,6 @@ static mrb_value tr_image_mask_to_alpha(mrb_state * mrb, mrb_value self) {
  * Somewhat slow. */
 static mrb_value tr_image_average_to_alpha(mrb_state * mrb, mrb_value self) {
   State * state    = state_get();
-  Thing * thing    = NULL;
   BeVec result;
   int store_index, r, g, b;
   mrb_int thingid; mrb_float x, y;
@@ -323,7 +310,6 @@ int tr_store_init(mrb_state * mrb, struct RClass * eru) {
     TR_METHOD_ARGC(mrb, krn, "load_ttf_stretch", tr_store_load_ttf_font_stretch, 5);
     TR_METHOD_ARGC(mrb, krn, "load_bitmap_font", tr_store_load_bitmap_font, 2);
     TR_METHOD_ARGC(mrb, krn, "load_bitmap_font_flags", tr_store_load_bitmap, 3);
-    TR_METHOD_ARGC(mrb, krn, "load_tilemap", tr_store_load_tilemap, 3);
   }
  
   
@@ -337,7 +323,6 @@ int tr_store_init(mrb_state * mrb, struct RClass * eru) {
   TR_CLASS_METHOD_ARGC(mrb, sto, "load_ttf_stretch", tr_store_load_ttf_font_stretch, 5);
   TR_CLASS_METHOD_ARGC(mrb, sto, "load_bitmap_font", tr_store_load_bitmap_font, 2);
   TR_CLASS_METHOD_ARGC(mrb, sto, "load_bitmap_font_flags", tr_store_load_bitmap, 3);
-  TR_CLASS_METHOD_ARGC(mrb, sto, "load_tilemap", tr_store_load_tilemap, 2);
   TR_CLASS_METHOD_ARGC(mrb, sto, "mask_to_alpha", tr_image_mask_to_alpha, 4);
   TR_CLASS_METHOD_ARGC(mrb, sto, "average_to_alpha", tr_image_average_to_alpha, 4);
   

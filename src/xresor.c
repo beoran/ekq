@@ -6,15 +6,16 @@
 #include "eruta.h"
 #include "resor.h"
 #include "fifi.h"
-#include "tileio.h"
 #include "xresor.h"
 
 
-void * xresor_tilemap_loader(const char * vpath, void * extra_) {  
+#ifdef COMMENT_
+
+void * xresor_maze_loader(const char * vpath, void * extra_) {  
   Tilemap * map;
   TilemapLoadExtra extra;
   (void) extra_;
-  map = fifi_load_vpath(tilemap_fifi_load, NULL, vpath);
+  map = fifi_load_vpath(_fifi_load, NULL, vpath);
   return map;
 }
 
@@ -31,7 +32,7 @@ Resor * xresor_load_tilemap(const char * vpath, void * extra) {
   return resor_load_other(vpath, RESOR_TILEMAP, xresor_tilemap_loader, xresor_tilemap_destructor, extra);
 }
 
-
+#endif
 
 
 

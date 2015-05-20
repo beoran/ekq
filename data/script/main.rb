@@ -141,11 +141,11 @@ module Main
 
 
   def do_start_test_map
-      start_load_tilemap
-      start_load_sprites
-      start_load_stuff
-    # start_setup_ui
-      actor_switch(Thing[:player_1])
+      # start_load_tilemap
+      # start_load_sprites
+      # start_load_stuff
+      # start_setup_ui
+      # actor_switch(Thing[:player_1])
   end
 
 
@@ -480,6 +480,8 @@ def eruta_on_start(*args)
   State.time_start = Eruta.time
   Zori.open
   Main.do_main_menu()
+  Main.do_start_test_map()
+  Zori.go(:default)
   return :ok
 end
 

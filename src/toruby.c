@@ -24,7 +24,6 @@
 #include "tr_graph.h"
 #include "tr_store.h"
 #include "tr_sprite.h"
-#include "tr_thing.h"
 
 
 /* Documentation of mrb_get_args: 
@@ -206,37 +205,16 @@ static mrb_value tr_script(mrb_state * mrb, mrb_value self) {
   return mrb_fixnum_value(res);
 }
 
-/* Sets the active map for the engine   */
-static mrb_value tr_active_map_(mrb_state * mrb, mrb_value self) {
-  Tilemap * map = NULL;
-  int id;
-  State * state   = state_get();
-  
-  (void) self; (void) mrb;
 
-  mrb_int index   = -1;
-  mrb_get_args(mrb, "i", &index); 
-  // Negative index means "disable the map" 
-  id = state_active_map_id_(state, index);
-  if (index < 0) {
-    return mrb_nil_value();
-  }
-  return mrb_fixnum_value(id);
+/* Gets the active maze's ID for the state   
+static mrb_value tr_active_maze(mrb_state * mrb, mrb_value self) {
+  int id;
+  (void) self; (void) mrb;
+  State * state   = state_get();  
+  return state->active_maze_id;  
 } 
 
 
-/* Gets the active map for the state   */
-static mrb_value tr_active_map(mrb_state * mrb, mrb_value self) {
-  int id;
-  (void) self; (void) mrb;
-  State * state   = state_get();
-  id = state_active_map_id(state);
-  return mrb_fixnum_value(id);  
-} 
-
-
-
-/* Wraps an Allegro event for use in ruby into an mruby hash. 
 static mrb_value tr_eventvalues(mrb_state * mrb   , ALLEGRO_EVENT * event, 
                           mrb_value * values, int size) {
   int result;
@@ -353,11 +331,9 @@ TORUBY_0_FGETTER(tr_get_time, al_get_time)
 TR_WRAP_NOARG_BOOL(tr_show_fps, global_state_show_fps)
 TR_WRAP_NOARG_BOOL(tr_show_graph, global_state_show_graph)
 TR_WRAP_NOARG_BOOL(tr_show_area, global_state_show_area)
-TR_WRAP_NOARG_BOOL(tr_show_physics, global_state_show_physics)
 TR_WRAP_B_BOOL(tr_show_fps_, global_state_show_fps_)
 TR_WRAP_B_BOOL(tr_show_graph_, global_state_show_graph_)
 TR_WRAP_B_BOOL(tr_show_area_, global_state_show_area_)
-TR_WRAP_B_BOOL(tr_show_physics_, global_state_show_physics_)
 TR_WRAP_B_BOOL(tr_show_mouse_cursor_, scegra_show_system_mouse_cursor)
 
 
@@ -411,19 +387,14 @@ int tr_init(mrb_state * mrb) {
 
   /*
   */ 
-  TR_METHOD_NOARG(mrb, krn, "active_map", tr_active_map);
-  TR_METHOD_ARGC(mrb, krn, "active_map_", tr_active_map_, 1);
+   
   
-  TR_CLASS_METHOD_NOARG(mrb, eru, "active_map", tr_active_map);
-  TR_CLASS_METHOD_ARGC(mrb, eru, "active_map_", tr_active_map_, 1);
   TR_CLASS_METHOD_NOARG(mrb, eru, "show_fps", tr_show_fps);
   TR_CLASS_METHOD_NOARG(mrb, eru, "show_area", tr_show_area);
   TR_CLASS_METHOD_NOARG(mrb, eru, "show_graph", tr_show_graph);
-  TR_CLASS_METHOD_NOARG(mrb, eru, "show_physics", tr_show_physics);
   TR_CLASS_METHOD_ARGC(mrb, eru, "show_fps="  , tr_show_fps_, 1);
   TR_CLASS_METHOD_ARGC(mrb, eru, "show_area=" , tr_show_area_, 1);
   TR_CLASS_METHOD_ARGC(mrb, eru, "show_graph=", tr_show_graph_, 1);
-  TR_CLASS_METHOD_NOARG(mrb, eru, "show_physics=", tr_show_physics_);
   TR_CLASS_METHOD_ARGC(mrb, eru, "show_mouse_cursor=", tr_show_mouse_cursor_, 1);
   
   
@@ -433,7 +404,6 @@ int tr_init(mrb_state * mrb) {
   
   /* Set up submodules. */
   tr_sprite_init(mrb, eru);
-  tr_thing_init(mrb, eru);
   tr_store_init(mrb, eru);
   tr_graph_init(mrb, eru);
   tr_audio_init(mrb, eru);
