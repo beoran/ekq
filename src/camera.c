@@ -96,7 +96,7 @@ Camera * camera_update(Camera * self, double dt) {
    
    /* Set up orthograĥic transform for UI, etc. */
    al_identity_transform(&self->orthographic_transform);
-   al_orthographic_transform(&self->orthographic_transform, 0, 0, -1, dw, dh, 1);
+   al_orthographic_transform(&self->orthographic_transform, 0, 0, -1, dw, dh, 10000);
   
    /* Perspective transform for the main screen 3D view. */
    al_identity_transform(&self->perspective_transform);
@@ -133,21 +133,18 @@ Vec3d camera_at(Camera * self) {
 }
 
 /** Sets position by individual components. */
-Vec3d camera_at_x_(Camera * self, float x) {
-  self->position.x = x;
-  return self->position;
+float camera_at_x_(Camera * self, float x) {
+  return self->position.x = x;
 }
 
 /** Sets position by individual components. */
-Vec3d camera_at_y_(Camera * self, float y) {
-  self->position.y = y;
-  return self->position;
+float camera_at_y_(Camera * self, float y) {
+  return self->position.y = y;
 }
 
 /** Sets position by individual components. */
-Vec3d camera_at_z_(Camera * self, float z) {
-  self->position.z = z;
-  return self->position;
+float camera_at_z_(Camera * self, float z) {
+  return self->position.z = z;
 }
 
 /** Sets position of camera. */

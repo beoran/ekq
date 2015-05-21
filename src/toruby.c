@@ -246,41 +246,79 @@ static mrb_value tr_lockin_maplayer(mrb_state * mrb, mrb_value self) {
   return mrb_fixnum_value(result);
 }
 
-static mrb_value tr_camera_x(mrb_state * mrb, mrb_value self) {
-  State * state    = state_get();
-  Camera * camera  = state_camera(state);
-  int result;
-  (void) self; (void) mrb;
-  result           = camera_at_x(camera);
-  return mrb_fixnum_value(result);
+#define TORUBY_CAMERA_TYPE_GETTER(NAME, TOCALL, TYPE, CONVERT)  \
+static mrb_value NAME(mrb_state * mrb, mrb_value self) {  \
+  State * state    = state_get();                         \
+  Camera * camera  = state_camera(state);                 \
+  TYPE result;                                            \
+  (void) self; (void) mrb;                                \
+  result           = TOCALL(camera);                      \
+  return CONVERT(result);                                 \
 }
 
-static mrb_value tr_camera_y(mrb_state * mrb, mrb_value self) {
-  State * state    = state_get();
-  Camera * camera  = state_camera(state);
-  int result;
-  (void) self; (void) mrb;
-  result           = camera_at_y(camera);
-  return mrb_fixnum_value(result);
+#define TORUBY_CAMERA_TYPE_MRB_GETTER(NAME, TOCALL, TYPE, CONVERT)  \
+static mrb_value NAME(mrb_state * mrb, mrb_value self) {  \
+  State * state    = state_get();                         \
+  Camera * camera  = state_camera(state);                 \
+  TYPE result;                                            \
+  (void) self; (void) mrb;                                \
+  result           = TOCALL(camera);                      \
+  return CONVERT(mrb, result);                            \
 }
 
-static mrb_value tr_camera_w(mrb_state * mrb, mrb_value self) {
-  State * state    = state_get();
-  Camera * camera  = state_camera(state);
-  int result;
-  (void) self; (void) mrb;
-  result           = camera_w(camera);
-  return mrb_fixnum_value(result);
+#define TORUBY_CAMERA_TYPE_SETTER(NAME, TOCALL, TYPE, CONVERT, PARAMSTR)  \
+static mrb_value NAME(mrb_state * mrb, mrb_value self) {  \
+  State * state    = state_get();                         \
+  Camera * camera  = state_camera(state);                 \
+  TYPE result, value;                                     \
+  (void) self; (void) mrb;                                \
+  mrb_get_args(mrb, PARAMSTR, &value);                    \
+  result           = TOCALL(camera, value);               \
+  return CONVERT(result);                                 \
 }
 
-static mrb_value tr_camera_h(mrb_state * mrb, mrb_value self) {
-  State * state    = state_get();
-  Camera * camera  = state_camera(state);
-  int result;
-  (void) self; (void) mrb;
-  result           = camera_w(camera);
-  return mrb_fixnum_value(result);
+#define TORUBY_CAMERA_TYPE_MRB_SETTER(NAME, TOCALL, TYPE, CONVERT, PARAMSTR)  \
+static mrb_value NAME(mrb_state * mrb, mrb_value self) {  \
+  State * state    = state_get();                         \
+  Camera * camera  = state_camera(state);                 \
+  TYPE result, value;                                     \
+  (void) self; (void) mrb;                                \
+  mrb_get_args(mrb, PARAMSTR, &value);                    \
+  result           = TOCALL(camera, value);               \
+  return CONVERT(mrb, result);                            \
 }
+
+
+
+#define TORUBY_CAMERA_FLOAT_GETTER(NAME, TOCALL)          \
+  TORUBY_CAMERA_TYPE_MRB_GETTER(NAME, TOCALL, mrb_float, mrb_float_value)
+
+#define TORUBY_CAMERA_INT_GETTER(NAME, TOCALL)          \
+  TORUBY_CAMERA_TYPE_GETTER(NAME, TOCALL, mrb_int, mrb_fixnum_value)
+
+#define TORUBY_CAMERA_FLOAT_SETTER(NAME, TOCALL)          \
+  TORUBY_CAMERA_TYPE_MRB_SETTER(NAME, TOCALL, mrb_float, mrb_float_value, "f")
+
+#define TORUBY_CAMERA_INT_SETTER(NAME, TOCALL)          \
+  TORUBY_CAMERA_TYPE_SETTER(NAME, TOCALL, mrb_int, mrb_fixnum_value, "i")
+
+
+  
+TORUBY_CAMERA_FLOAT_GETTER(tr_camera_x, camera_at_x)
+TORUBY_CAMERA_FLOAT_GETTER(tr_camera_y, camera_at_y)
+TORUBY_CAMERA_FLOAT_GETTER(tr_camera_z, camera_at_z)
+TORUBY_CAMERA_FLOAT_GETTER(tr_camera_alpha, camera_alpha)
+TORUBY_CAMERA_FLOAT_GETTER(tr_camera_theta, camera_theta)
+
+
+TORUBY_CAMERA_INT_GETTER(tr_camera_w, camera_w)
+TORUBY_CAMERA_INT_GETTER(tr_camera_h, camera_h)
+
+TORUBY_CAMERA_FLOAT_SETTER(tr_camera_x_, camera_at_x_)
+TORUBY_CAMERA_FLOAT_SETTER(tr_camera_y_, camera_at_y_)
+TORUBY_CAMERA_FLOAT_SETTER(tr_camera_z_, camera_at_z_)
+TORUBY_CAMERA_FLOAT_SETTER(tr_camera_alpha_, camera_alpha_)
+TORUBY_CAMERA_FLOAT_SETTER(tr_camera_theta_, camera_theta_)
 
 
 /* Obsolete, tile maps will be loaded through store. 
@@ -349,6 +387,7 @@ int tr_init(mrb_state * mrb) {
   struct RClass *thi;
   struct RClass *eru;
   struct RClass *aud;
+  struct RClass *cam;
   
   eru = mrb_define_module(mrb, "Eruta");
   pth = mrb_define_class_under(mrb, eru, "Path"  , mrb->object_class);
@@ -378,12 +417,34 @@ int tr_init(mrb_state * mrb) {
   TR_METHOD_ARGC(mrb, krn, "log_enable"   , tr_log_disable , 1);
   TR_METHOD_ARGC(mrb, krn, "log_disable"  , tr_log_enable  , 1);
   TR_METHOD_ARGC(mrb, krn, "script"       , tr_script , 1);
+
+  cam = mrb_define_module_under(mrb, eru, "Camera");
+
   TR_METHOD_ARGC(mrb, krn, "camera_track" , tr_camera_track, 1);
   TR_METHOD_ARGC(mrb, krn, "camera_lockin", tr_lockin_maplayer, 1);
   TR_METHOD_NOARG(mrb, krn, "camera_x"    , tr_camera_x);
   TR_METHOD_NOARG(mrb, krn, "camera_y"    , tr_camera_y);
   TR_METHOD_NOARG(mrb, krn, "camera_w"    , tr_camera_w);
   TR_METHOD_NOARG(mrb, krn, "camera_h"    , tr_camera_h);
+  TR_METHOD_NOARG(mrb, krn, "camera_alpha", tr_camera_alpha);
+  TR_METHOD_NOARG(mrb, krn, "camera_theta", tr_camera_theta);
+
+  
+ 
+  TR_CLASS_METHOD_NOARG(mrb, cam, "x"    , tr_camera_x);
+  TR_CLASS_METHOD_NOARG(mrb, cam, "y"    , tr_camera_y);
+  TR_CLASS_METHOD_NOARG(mrb, cam, "z"    , tr_camera_z);
+  TR_CLASS_METHOD_NOARG(mrb, cam, "w"    , tr_camera_w);
+  TR_CLASS_METHOD_NOARG(mrb, cam, "h"    , tr_camera_h);
+  TR_CLASS_METHOD_NOARG(mrb, cam, "alpha", tr_camera_alpha);
+  TR_CLASS_METHOD_NOARG(mrb, cam, "theta", tr_camera_theta);
+
+  TR_CLASS_METHOD_ARGC(mrb, cam, "x="    , tr_camera_x_, 1);
+  TR_CLASS_METHOD_ARGC(mrb, cam, "y="    , tr_camera_y_, 1);
+  TR_CLASS_METHOD_ARGC(mrb, cam, "z="    , tr_camera_z_, 1);
+  TR_CLASS_METHOD_ARGC(mrb, cam, "alpha=", tr_camera_alpha_, 1);
+  TR_CLASS_METHOD_ARGC(mrb, cam, "theta=", tr_camera_theta_, 1);
+
 
   /*
   */ 

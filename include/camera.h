@@ -49,18 +49,18 @@ Camera * camera_new(Vec3d at, Vec3d look, Point size, float fov);
 Camera * camera_update (Camera * self, double dt);
 
 Vec3d camera_at (Camera * self );
-Vec3d camera_at_x_ (Camera * self , float x );
-Vec3d camera_at_y_ (Camera * self , float y );
-Vec3d camera_at_z_ (Camera * self , float z );
+float camera_at_x_(Camera * self , float x );
+float camera_at_y_(Camera * self , float y );
+float camera_at_z_(Camera * self , float z );
 Vec3d camera_at_xyz_ (Camera * self , float x , float y, float z);
 Vec3d camera_at_(Camera * self , Vec3d at );
-float camera_angle_(Camera * self, float angle);
+float camera_alpha_(Camera * self, float angle);
 float camera_theta_(Camera * self, float theta);
 
 float camera_at_x(Camera * self);
 float camera_at_y(Camera * self);
 float camera_at_z(Camera * self);
-float camera_angle(Camera * self);
+float camera_alpha(Camera * self);
 float camera_theta(Camera * self);
 
 

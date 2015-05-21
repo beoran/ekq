@@ -561,15 +561,17 @@ void draw_test_3d(void) {
   ALLEGRO_COLOR red = al_map_rgb(255, 0, 0);
   ALLEGRO_COLOR yellow = al_map_rgb(255, 255, 0);
   
-  ALLEGRO_VERTEX p[3] = { 
-    {  10,  20,  0,  0, 0, red },
-    {  10,  10,  0,  0, 0, red },
-    {  20,  20,  0,  0, 0, red },
-    
+  ALLEGRO_VERTEX p[] = { 
+    {  -1,  -2,  0,  0, 0, red },
+    {  -1,  -1,  0,  0, 0, red },
+    {  -2,  -2,  0,  0, 0, red },
+    {  0,  -4,  0,  0, 0, yellow },
+    {  0,  -4,  -2,  0, 0, red   },
+    {  -2,  -4,  -2,  0, 0, yellow  },
   };
     
-  al_draw_prim(p, NULL, NULL, 0, 3, ALLEGRO_PRIM_TRIANGLE_LIST);
-  al_draw_filled_rectangle(400, 400, 440, 450, yellow);
+  al_draw_prim(p, NULL, NULL, 0, 6, ALLEGRO_PRIM_TRIANGLE_LIST);
+  // al_draw_filled_rectangle(1, 1, 2, 2, yellow);
   
 }
 
@@ -597,43 +599,49 @@ void state_draw(State * self) {
   double dw, dh, f;
   dw = 640;
   dh = 480;
-  f  = 0.5;
+  f  = 1.0;
 
   normal_transform = *(al_get_current_projection_transform());
   normal_view      = *(al_get_current_transform());
+
   
-  camera_apply_view(&self->camera_transform);
 
   // camera_apply_perspective(state_camera(self), NULL);
-
-  /* Use and clear depth buffer. */
-  al_set_render_state(ALLEGRO_DEPTH_TEST, 1);
-  al_clear_depth_buffer(10000);
-
-
+  
+  /* First set up perspective, then clear screen and depth buffer, and then 
+   * move the camera. Finally draw the 3D scene.
+   */
   al_identity_transform(&persp);
-  /* Back up camera a bit. */
-  /*al_translate_transform_3d(&self->perspective_transform, 0, 0, -1);*/
-  /* Set up a nice 3D view. */
-  al_identity_transform(&camt);
-   al_translate_transform_3d(&camt, 0, 0, 0);
-  // al_use_transform(&camt);
-   
+  al_translate_transform_3d(&persp, 0, 0, -5);
+  
+  //al_perspective_transform(&persp, -320, -240, 1, 320, 240, 10000);
+  al_perspective_transform(&persp, (-1 * dw) / (dh * f), f , 1, 
+                                    (f * dw) / dh      , -f, 10000);
+  al_use_projection_transform(&persp);
+  
   /* Draw background color. */
   al_clear_to_color(self->background_color);
 
+  /* Use and clear depth buffer. */
+  al_set_render_state(ALLEGRO_DEPTH_TEST, 1);
+  al_clear_depth_buffer(1.0);
+  
+  camera_apply_view(self->camera);
 
-  al_perspective_transform(&persp, -320, -240, 1, 320, 240, 10000);
-  // al_perspective_transform(&persp, -1 * dw / dh *f, f, 1, f * dw / dh, -f, 1000);
-  al_use_projection_transform(&persp);
-
+  
   draw_test_3d();
-  // draw_test_2d();
+  draw_test_2d();
+
+  /* Disable depth test for UI. */
+  al_set_render_state(ALLEGRO_DEPTH_TEST, 0);
+ 
+  
+  al_identity_transform(&normal_transform);
+  al_identity_transform(&normal_view);
+  al_orthographic_transform(&normal_transform, 0, 0, -1, dw, dh, 10000);
    
   al_use_projection_transform(&normal_transform); 
   al_use_transform(&normal_view);
-  /* Disable depth test for UI. */
-  al_set_render_state(ALLEGRO_DEPTH_TEST, 0);
   
   // al_draw_filled_rectangle(0, 100, 200, 300, al_map_rgb(50, 100, 150));
 
@@ -652,15 +660,17 @@ void state_draw(State * self) {
                       10, 10, 0, "FPS: %.0f", state_fps(self));
                       
     al_draw_textf(state_font(self), COLOR_WHITE,
-                      10, 20, 0, "Cam: %f %f %f", 
+                      10, 20, 0, "Cam: %f %f %f %f %f", 
                       camera_at_x(self->camera),
                       camera_at_y(self->camera),
-                      camera_at_z(self->camera));
+                      camera_at_z(self->camera),
+                      camera_alpha(self->camera),
+                      camera_theta(self->camera));
   } 
   
   /* Draw the console (will autohide if not active). */
   bbwidget_draw((BBWidget *)state_console(self));
-  state_scale_display(self); /* XXX: will this work for 3D projection??? */
+  // state_scale_display(self); /* XXX: will this work for 3D projection??? */
 }
 
 

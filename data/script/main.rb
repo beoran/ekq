@@ -385,53 +385,40 @@ module Main
     State.last_key      = key
    
     p "on_key_down #{time} #{key}"
-    actor         = Thing.actor
-    return nil unless actor
-    vx, vy        = * actor.v
     case key
       when KEY_A
-        actor_switch(Thing[:player_1])
       when KEY_B
-        actor_switch(Thing[:player_2])
       when KEY_E
-        reload_tilemap()
       when KEY_H
-        Eruta::Graph.visible_(52, 0)
       when KEY_M
-        active_map_($tilemap_id)
       when KEY_N
-        active_map_(-1)
       when KEY_S
-        Eruta::Graph.visible_(52, 1)
       when KEY_F
         Eruta.show_fps=     !Eruta.show_fps
       when KEY_R
-        Eruta.show_area=    !Eruta.show_area
       when KEY_G
         Eruta.show_graph=   !Eruta.show_graph
       when KEY_P
-        Eruta.show_physics= !Eruta.show_physics
       when KEY_UP
-        vy -= 100.0
-        actor.v = [ vx, vy ]
+        Eruta::Camera.z = Eruta::Camera.z  - 1.0
       when KEY_DOWN
-        vy += 100.0
-        actor.v = [ vx, vy ]
+        Eruta::Camera.z = Eruta::Camera.z  + 1.0
+      when KEY_PGUP
+        Eruta::Camera.z = Eruta::Camera.z  - 100.0
+      when KEY_PGDN
+        Eruta::Camera.z = Eruta::Camera.z  + 100.0
       when KEY_LEFT
-        vx -= 100.0
-        actor.v = [ vx, vy ]
+        Eruta::Camera.x = Eruta::Camera.x  - 1.0
       when KEY_RIGHT
-        vx += 100.0
-        actor.v = [ vx, vy ]
+        Eruta::Camera.x = Eruta::Camera.x  + 1.0
+      when KEY_PAD_MINUS  
+        Eruta::Camera.y = Eruta::Camera.y  + 1.0
+      when KEY_PAD_PLUS  
+        Eruta::Camera.y = Eruta::Camera.y - 1.0
+        
       when KEY_D
-        Thing.actor.pose = Sprite::DOWN
       when KEY_SPACE
-        puts "Searching..."
-        actor_search_or_talk
       when KEY_LSHIFT, KEY_RSHIFT
-        puts "attacking"
-        actor_attack
-        actor.v = [ 0, 0 ]
       when KEY_COMMA
         show_keybindings
       else
