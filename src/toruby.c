@@ -309,6 +309,7 @@ TORUBY_CAMERA_FLOAT_GETTER(tr_camera_y, camera_at_y)
 TORUBY_CAMERA_FLOAT_GETTER(tr_camera_z, camera_at_z)
 TORUBY_CAMERA_FLOAT_GETTER(tr_camera_alpha, camera_alpha)
 TORUBY_CAMERA_FLOAT_GETTER(tr_camera_theta, camera_theta)
+TORUBY_CAMERA_FLOAT_GETTER(tr_camera_fov, camera_fov)
 
 
 TORUBY_CAMERA_INT_GETTER(tr_camera_w, camera_w)
@@ -319,6 +320,7 @@ TORUBY_CAMERA_FLOAT_SETTER(tr_camera_y_, camera_at_y_)
 TORUBY_CAMERA_FLOAT_SETTER(tr_camera_z_, camera_at_z_)
 TORUBY_CAMERA_FLOAT_SETTER(tr_camera_alpha_, camera_alpha_)
 TORUBY_CAMERA_FLOAT_SETTER(tr_camera_theta_, camera_theta_)
+TORUBY_CAMERA_FLOAT_SETTER(tr_camera_fov_, camera_fov_)
 
 
 /* Obsolete, tile maps will be loaded through store. 
@@ -428,6 +430,7 @@ int tr_init(mrb_state * mrb) {
   TR_METHOD_NOARG(mrb, krn, "camera_h"    , tr_camera_h);
   TR_METHOD_NOARG(mrb, krn, "camera_alpha", tr_camera_alpha);
   TR_METHOD_NOARG(mrb, krn, "camera_theta", tr_camera_theta);
+  TR_METHOD_NOARG(mrb, krn, "camera_fov"  , tr_camera_fov);
 
   
  
@@ -438,12 +441,14 @@ int tr_init(mrb_state * mrb) {
   TR_CLASS_METHOD_NOARG(mrb, cam, "h"    , tr_camera_h);
   TR_CLASS_METHOD_NOARG(mrb, cam, "alpha", tr_camera_alpha);
   TR_CLASS_METHOD_NOARG(mrb, cam, "theta", tr_camera_theta);
+  TR_CLASS_METHOD_NOARG(mrb, cam, "fov"  , tr_camera_fov);
 
   TR_CLASS_METHOD_ARGC(mrb, cam, "x="    , tr_camera_x_, 1);
   TR_CLASS_METHOD_ARGC(mrb, cam, "y="    , tr_camera_y_, 1);
   TR_CLASS_METHOD_ARGC(mrb, cam, "z="    , tr_camera_z_, 1);
   TR_CLASS_METHOD_ARGC(mrb, cam, "alpha=", tr_camera_alpha_, 1);
   TR_CLASS_METHOD_ARGC(mrb, cam, "theta=", tr_camera_theta_, 1);
+  TR_CLASS_METHOD_ARGC(mrb, cam, "fov="  , tr_camera_fov_, 1);
 
 
   /*

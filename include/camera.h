@@ -56,12 +56,14 @@ Vec3d camera_at_xyz_ (Camera * self , float x , float y, float z);
 Vec3d camera_at_(Camera * self , Vec3d at );
 float camera_alpha_(Camera * self, float angle);
 float camera_theta_(Camera * self, float theta);
+float camera_fov_(Camera * self, float fov);
 
 float camera_at_x(Camera * self);
 float camera_at_y(Camera * self);
 float camera_at_z(Camera * self);
 float camera_alpha(Camera * self);
 float camera_theta(Camera * self);
+float camera_fov(Camera * self);
 
 
 float camera_w(Camera * self);

@@ -475,7 +475,7 @@ State * state_init(State * self, BOOL fullscreen) {
   
   // set up camera
   self->camera = camera_new(vec3d(0, 0, -1), vec3d(0, 0, 1),
-                            bevec(SCREEN_W, SCREEN_H), 45);
+                            bevec(SCREEN_W, SCREEN_H), 90);
   
   if(!self->camera) {
       return state_errmsg_(self, "Out of memory when allocating camera.");
@@ -557,20 +557,45 @@ void state_scale_display(State * self) {
    
 }
 
-void draw_test_3d(void) {
-  ALLEGRO_COLOR red = al_map_rgb(255, 0, 0);
-  ALLEGRO_COLOR yellow = al_map_rgb(255, 255, 0);
-  
-  ALLEGRO_VERTEX p[] = { 
-    {  -1,  -2,  0,  0, 0, red },
-    {  -1,  -1,  0,  0, 0, red },
-    {  -2,  -2,  0,  0, 0, red },
-    {  0,  -4,  0,  0, 0, yellow },
-    {  0,  -4,  -2,  0, 0, red   },
-    {  -2,  -4,  -2,  0, 0, yellow  },
+void draw_wall(float x, float y, float z, float w, float h,  ALLEGRO_COLOR * color[4], ALLEGRO_BITMAP * bmp) {
+  ALLEGRO_VERTEX p[] = {         
+    {  x + w,  y + w,  z    ,  1.0, 1.0, *color[2] },
+    {  x + w,  y    ,  z    ,  0.0, 1.0, *color[1] },
+    {      x,  y    ,  z    ,  0.0, 0.0, *color[0] },
+    {  x + w,  y + w,  z    ,  1.0, 1.0, *color[2] },
+    {  x    ,  y + w,  z    ,  1.0, 0.0, *color[3] },
+    {  x    ,  y    ,  z    ,  0.0, 0.0, *color[0] },
   };
-    
-  al_draw_prim(p, NULL, NULL, 0, 6, ALLEGRO_PRIM_TRIANGLE_LIST);
+  
+  al_draw_prim(p, NULL, bmp, 0, 6, ALLEGRO_PRIM_TRIANGLE_LIST);
+}
+
+
+void draw_floor(float x, float y, float z, float w, float d,  ALLEGRO_COLOR * color[4], ALLEGRO_BITMAP * bmp) {
+  ALLEGRO_VERTEX p[] = {         
+    {  x + w,  y    ,  z + d,  1.0, 1.0, *color[2] },
+    {  x + w,  y    ,  z    ,  0.0, 1.0, *color[1] },
+    {      x,  y    ,  z    ,  0.0, 0.0, *color[0] },
+    {  x + w,  y    ,  z + d,  1.0, 1.0, *color[2] },
+    {  x    ,  y    ,  z + d,  1.0, 0.0, *color[3] },
+    {  x    ,  y    ,  z    ,  0.0, 0.0, *color[0] },
+  };
+  
+  al_draw_prim(p, NULL, bmp, 0, 6, ALLEGRO_PRIM_TRIANGLE_LIST);
+}
+
+
+
+void draw_test_3d(void) {
+  ALLEGRO_COLOR c1          = al_map_rgb(180, 100, 100);
+  ALLEGRO_COLOR c2          = al_map_rgb(60 , 50, 50);
+  ALLEGRO_COLOR c3          = al_map_rgb(25 , 50, 25);
+  ALLEGRO_COLOR *fcolors[4] = { &c3, &c3, &c3, &c3 };
+  ALLEGRO_COLOR *wcolors[4] = { &c1, &c1, &c2, &c2 };
+  
+  draw_wall(0, 0, 0, 2, 2, wcolors, NULL);
+  draw_floor(0, 0, 0, 2, 2, fcolors, NULL);
+  
   // al_draw_filled_rectangle(1, 1, 2, 2, yellow);
   
 }
@@ -611,14 +636,8 @@ void state_draw(State * self) {
   /* First set up perspective, then clear screen and depth buffer, and then 
    * move the camera. Finally draw the 3D scene.
    */
-  al_identity_transform(&persp);
-  al_translate_transform_3d(&persp, 0, 0, -5);
-  
-  //al_perspective_transform(&persp, -320, -240, 1, 320, 240, 10000);
-  al_perspective_transform(&persp, (-1 * dw) / (dh * f), f , 1, 
-                                    (f * dw) / dh      , -f, 10000);
-  al_use_projection_transform(&persp);
-  
+  camera_apply_perspective(state_camera(self), NULL);
+   
   /* Draw background color. */
   al_clear_to_color(self->background_color);
 
@@ -630,8 +649,7 @@ void state_draw(State * self) {
 
   
   draw_test_3d();
-  draw_test_2d();
-
+  
   /* Disable depth test for UI. */
   al_set_render_state(ALLEGRO_DEPTH_TEST, 0);
  
@@ -660,12 +678,13 @@ void state_draw(State * self) {
                       10, 10, 0, "FPS: %.0f", state_fps(self));
                       
     al_draw_textf(state_font(self), COLOR_WHITE,
-                      10, 20, 0, "Cam: %f %f %f %f %f", 
+                      10, 20, 0, "Cam: %f %f %f %f %f %f", 
                       camera_at_x(self->camera),
                       camera_at_y(self->camera),
                       camera_at_z(self->camera),
                       camera_alpha(self->camera),
-                      camera_theta(self->camera));
+                      camera_theta(self->camera),
+                      camera_fov(self->camera));
   } 
   
   /* Draw the console (will autohide if not active). */

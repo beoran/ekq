@@ -398,23 +398,26 @@ module Main
       when KEY_R
       when KEY_G
         Eruta.show_graph=   !Eruta.show_graph
-      when KEY_P
+      when KEY_C
+        Eruta::Camera.fov = Eruta::Camera.fov  - 1.0
+      when KEY_V
+        Eruta::Camera.fov = Eruta::Camera.fov  + 1.0
       when KEY_UP
-        Eruta::Camera.z = Eruta::Camera.z  - 1.0
+        Eruta::Camera.z = Eruta::Camera.z  - 0.1
       when KEY_DOWN
-        Eruta::Camera.z = Eruta::Camera.z  + 1.0
+        Eruta::Camera.z = Eruta::Camera.z  + 0.1
       when KEY_PGUP
-        Eruta::Camera.z = Eruta::Camera.z  - 100.0
+        Eruta::Camera.z = Eruta::Camera.z  - 1.0
       when KEY_PGDN
-        Eruta::Camera.z = Eruta::Camera.z  + 100.0
+        Eruta::Camera.z = Eruta::Camera.z  + 1.0
       when KEY_LEFT
-        Eruta::Camera.x = Eruta::Camera.x  - 1.0
+        Eruta::Camera.x = Eruta::Camera.x  - 0.1
       when KEY_RIGHT
-        Eruta::Camera.x = Eruta::Camera.x  + 1.0
+        Eruta::Camera.x = Eruta::Camera.x  + 0.1
       when KEY_PAD_MINUS  
-        Eruta::Camera.y = Eruta::Camera.y  + 1.0
+        Eruta::Camera.y = Eruta::Camera.y  + 0.1
       when KEY_PAD_PLUS  
-        Eruta::Camera.y = Eruta::Camera.y - 1.0
+        Eruta::Camera.y = Eruta::Camera.y - 0.1
         
       when KEY_D
       when KEY_SPACE

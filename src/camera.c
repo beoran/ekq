@@ -53,7 +53,7 @@ Camera * camera_init(Camera * self, Vec3d at, Vec3d look, Point size, float fov)
   self->size          = size;
   self->look          = look;
   self->up            = vec3d(0, 1, 0);
-  self->field_of_view = fov;
+  self->field_of_view = 2 * ALLEGRO_PI * fov / 360.0;
   self->speed         = vec3d(0, 0, 0);
   self->torque        = rot3d(0, 0, 0);
   self->flags         = 0;
@@ -90,8 +90,11 @@ void camera_apply_orthographic(Camera * self, ALLEGRO_DISPLAY * display) {
 /** Updates the camera. */
 Camera * camera_update(Camera * self, double dt) {
    
-   double dw = self->size.x;
-   double dh = self->size.y;
+   ALLEGRO_DISPLAY *display = al_get_current_display();
+   double dw = al_get_display_width(display);
+   double dh = al_get_display_height(display);
+
+   
    double  f = tan(self->field_of_view / 2.0);
    
    /* Set up orthograĥic transform for UI, etc. */
@@ -101,10 +104,11 @@ Camera * camera_update(Camera * self, double dt) {
    /* Perspective transform for the main screen 3D view. */
    al_identity_transform(&self->perspective_transform);
    /* Back up camera a bit. */
-   /*al_translate_transform_3d(&self->perspective_transform, 0, 0, -1);*/
    /* Set up a nice 3D view. */
+   al_translate_transform_3d(&self->perspective_transform, 0, 0, -1);
    al_perspective_transform(&self->perspective_transform, 
-      -1 * dw / dh *f, f, 1, f * dw / dh, -f, 1000);
+      (-1 * dw) / (dh * f), f, 1, (f * dw) / (dh), -f, 10000);
+ 
   
   /* Set up the camera's position and view transform. */
   /*  al_build_camera_transform(&self->camera_transform, 
@@ -241,4 +245,14 @@ float camera_theta_(Camera * self, float theta) {
   return self->theta = theta;
 }
 
+/** Gets field of view of camera.  */
+float camera_fov(Camera * self) {
+  return (360 * self->field_of_view) / (2 * ALLEGRO_PI);
+}
+
+
+/** Sets field of view of camera.  */
+float camera_fov_(Camera * self, float fov) {
+  return self->field_of_view = 2 * ALLEGRO_PI * fov / 360.0;
+}
 
