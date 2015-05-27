@@ -475,7 +475,7 @@ State * state_init(State * self, BOOL fullscreen) {
   
   // set up camera
   self->camera = camera_new(vec3d(0, 0, -1), vec3d(0, 0, 1),
-                            bevec(SCREEN_W, SCREEN_H), 90);
+                            bevec(SCREEN_W, SCREEN_H), 60);
   
   if(!self->camera) {
       return state_errmsg_(self, "Out of memory when allocating camera.");
@@ -557,14 +557,36 @@ void state_scale_display(State * self) {
    
 }
 
+/* Coordinates of x,y,z are that of the bottom left hand corner of the wall. */
 void draw_wall(float x, float y, float z, float w, float h,  ALLEGRO_COLOR * color[4], ALLEGRO_BITMAP * bmp) {
+  float u = (bmp ? (al_get_bitmap_width(bmp))   :  1.0);
+  float v = (bmp ? (al_get_bitmap_height(bmp))  :  1.0);
+  
   ALLEGRO_VERTEX p[] = {         
-    {  x + w,  y + w,  z    ,  1.0, 1.0, *color[2] },
-    {  x + w,  y    ,  z    ,  0.0, 1.0, *color[1] },
-    {      x,  y    ,  z    ,  0.0, 0.0, *color[0] },
-    {  x + w,  y + w,  z    ,  1.0, 1.0, *color[2] },
-    {  x    ,  y + w,  z    ,  1.0, 0.0, *color[3] },
-    {  x    ,  y    ,  z    ,  0.0, 0.0, *color[0] },
+    {  x + w,  y + h,  z    ,  0.0, 0.0, *color[1] },
+    {  x + w,  y    ,  z    ,  0.0,   v, *color[2] },
+    {      x,  y    ,  z    ,    u,   v, *color[3] },
+    {  x + w,  y + h,  z    ,  0.0, 0.0, *color[1] },
+    {  x    ,  y + h,  z    ,    u, 0.0, *color[0] },
+    {  x    ,  y    ,  z    ,    u,   v, *color[2] },
+  };
+  
+  al_draw_prim(p, NULL, bmp, 0, 6, ALLEGRO_PRIM_TRIANGLE_LIST);
+}
+
+
+void draw_wall2(float x, float y, float z, float h, float d,  ALLEGRO_COLOR * color[4], ALLEGRO_BITMAP * bmp) {
+  float u = (bmp ? (al_get_bitmap_width(bmp))   :  1.0);
+  float v = (bmp ? (al_get_bitmap_height(bmp))  :  1.0);
+
+
+  ALLEGRO_VERTEX p[] = {         
+    {  x    ,  y + h,  z + d,  0.0, 0.0, *color[0] },
+    {  x    ,  y    ,  z    ,    u,   v, *color[2] },
+    {  x    ,  y + h,  z    ,    u, 0.0, *color[1] },
+    {  x    ,  y + h,  z + d,  0.0, 0.0, *color[0] },
+    {  x    ,  y    ,  z + d,  0.0,   v, *color[3] },
+    {  x    ,  y    ,  z    ,    u,   v, *color[2] },
   };
   
   al_draw_prim(p, NULL, bmp, 0, 6, ALLEGRO_PRIM_TRIANGLE_LIST);
@@ -572,13 +594,17 @@ void draw_wall(float x, float y, float z, float w, float h,  ALLEGRO_COLOR * col
 
 
 void draw_floor(float x, float y, float z, float w, float d,  ALLEGRO_COLOR * color[4], ALLEGRO_BITMAP * bmp) {
+  float u = (bmp ? (al_get_bitmap_width(bmp))   :  1.0);
+  float v = (bmp ? (al_get_bitmap_height(bmp))  :  1.0);
+
+
   ALLEGRO_VERTEX p[] = {         
-    {  x + w,  y    ,  z + d,  1.0, 1.0, *color[2] },
-    {  x + w,  y    ,  z    ,  0.0, 1.0, *color[1] },
-    {      x,  y    ,  z    ,  0.0, 0.0, *color[0] },
-    {  x + w,  y    ,  z + d,  1.0, 1.0, *color[2] },
-    {  x    ,  y    ,  z + d,  1.0, 0.0, *color[3] },
-    {  x    ,  y    ,  z    ,  0.0, 0.0, *color[0] },
+    {  x + w,  y    ,  z + d,  0.0, 0.0, *color[2] },
+    {  x + w,  y    ,  z    ,  0.0,   v, *color[1] },
+    {      x,  y    ,  z    ,    u,   v, *color[0] },
+    {  x + w,  y    ,  z + d,  0.0, 0.0, *color[2] },
+    {  x    ,  y    ,  z + d,    u, 0.0, *color[3] },
+    {  x    ,  y    ,  z    ,    u,   v, *color[0] },
   };
   
   al_draw_prim(p, NULL, bmp, 0, 6, ALLEGRO_PRIM_TRIANGLE_LIST);
@@ -587,14 +613,65 @@ void draw_floor(float x, float y, float z, float w, float d,  ALLEGRO_COLOR * co
 
 
 void draw_test_3d(void) {
+  static ALLEGRO_BITMAP * walltex  = NULL;
+  static ALLEGRO_BITMAP * floortex = NULL;
+  
+  if (!walltex) {
+    walltex = fifi_load_bitmap("image/texture/wall_1.png");
+    if (!walltex) {
+      LOG_ERROR("Could not load wall texture.");
+    }
+  }
+  
+  if (!floortex) {
+    floortex = fifi_load_bitmap("image/texture/tile_1.png");
+    if (!floortex) {
+      LOG_ERROR("Could not load floor texture.");
+    }
+  }
+  
+  
   ALLEGRO_COLOR c1          = al_map_rgb(180, 100, 100);
   ALLEGRO_COLOR c2          = al_map_rgb(60 , 50, 50);
   ALLEGRO_COLOR c3          = al_map_rgb(25 , 50, 25);
+  ALLEGRO_COLOR c4          = al_map_rgb(100, 100, 250);
+  ALLEGRO_COLOR c5          = al_map_rgb(150, 150, 200);
+  ALLEGRO_COLOR c6          = al_map_rgb(80 , 20, 10);
+  ALLEGRO_COLOR cb          = al_map_rgb(100, 30, 30);
+  ALLEGRO_COLOR cw          = al_map_rgb(255, 255, 255);
+  
+  
+  
   ALLEGRO_COLOR *fcolors[4] = { &c3, &c3, &c3, &c3 };
   ALLEGRO_COLOR *wcolors[4] = { &c1, &c1, &c2, &c2 };
+  ALLEGRO_COLOR *scolors[4] = { &c4, &c4, &c5, &c5 };
+  ALLEGRO_COLOR *ucolors[4] = { &c5, &c5, &c5, &c5 };
+  ALLEGRO_COLOR *bcolors[4] = { &cb, &cb, &cb, &cb };
+  ALLEGRO_COLOR *icolors[4] = { &cw, &cw, &cw, &cw };
   
-  draw_wall(0, 0, 0, 2, 2, wcolors, NULL);
-  draw_floor(0, 0, 0, 2, 2, fcolors, NULL);
+  // Sky box and floor pane
+   
+  // floor pane
+  draw_floor(-500, -0.1, -500, 1000, 1000, bcolors, NULL);
+  // sky box sides
+  draw_wall(-500, 500, -500, 1000, -500, scolors, NULL);  
+  draw_wall(-500, 500, 500,  1000, -500, scolors, NULL);
+  draw_wall2(-500, 500, -500, -500, 1000, scolors, NULL);
+  draw_wall2(500, 500, -500, -500, 1000, scolors, NULL);
+  // sky box ceiling.
+  draw_floor(-500, 500, -500, 1000, 1000, ucolors, NULL);
+
+  
+  // 8draw_floor(-400, -400, -400, 800, 800, scolors, NULL);
+  
+  
+  draw_wall(0, 0, 0, 2, 2, wcolors, walltex);
+  draw_wall2(0, 0, 0, 2, 2, wcolors, walltex);
+  draw_floor(0, 0, 0, 2, 2, fcolors, floortex);
+  draw_wall2(2, 0, 0, 2, 2, wcolors, walltex);
+  draw_wall(2, 0, 2, 2, 2, wcolors, walltex);
+  draw_wall2(4, 0, 2, 2, 2, wcolors, walltex);
+  
   
   // al_draw_filled_rectangle(1, 1, 2, 2, yellow);
   
@@ -656,7 +733,7 @@ void state_draw(State * self) {
   
   al_identity_transform(&normal_transform);
   al_identity_transform(&normal_view);
-  al_orthographic_transform(&normal_transform, 0, 0, -1, dw, dh, 10000);
+  al_orthographic_transform(&normal_transform, 0, 0, -1, dw, dh, 1);
    
   al_use_projection_transform(&normal_transform); 
   al_use_transform(&normal_view);

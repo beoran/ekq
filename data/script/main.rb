@@ -388,7 +388,6 @@ module Main
     case key
       when KEY_A
       when KEY_B
-      when KEY_E
       when KEY_H
       when KEY_M
       when KEY_N
@@ -396,6 +395,14 @@ module Main
       when KEY_F
         Eruta.show_fps=     !Eruta.show_fps
       when KEY_R
+        Eruta::Camera.alpha = Eruta::Camera.alpha - 15     
+      when KEY_E
+        Eruta::Camera.alpha = Eruta::Camera.alpha + 15     
+      when KEY_Y
+        Eruta::Camera.theta = Eruta::Camera.theta - 15     
+      when KEY_T
+        Eruta::Camera.theta = Eruta::Camera.theta + 15     
+
       when KEY_G
         Eruta.show_graph=   !Eruta.show_graph
       when KEY_C
@@ -472,6 +479,10 @@ def eruta_on_start(*args)
   Main.do_main_menu()
   Main.do_start_test_map()
   Zori.go(:default)
+  Eruta::Camera.x = -1
+  Eruta::Camera.y = -1
+  Eruta::Camera.z = -3
+  
   return :ok
 end
 

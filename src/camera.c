@@ -99,7 +99,7 @@ Camera * camera_update(Camera * self, double dt) {
    
    /* Set up orthograĥic transform for UI, etc. */
    al_identity_transform(&self->orthographic_transform);
-   al_orthographic_transform(&self->orthographic_transform, 0, 0, -1, dw, dh, 10000);
+   al_orthographic_transform(&self->orthographic_transform, 0, 0, -1, dw, dh, 1000);
   
    /* Perspective transform for the main screen 3D view. */
    al_identity_transform(&self->perspective_transform);
@@ -107,9 +107,12 @@ Camera * camera_update(Camera * self, double dt) {
    /* Set up a nice 3D view. */
    al_translate_transform_3d(&self->perspective_transform, 0, 0, -1);
    al_perspective_transform(&self->perspective_transform, 
-      (-1 * dw) / (dh * f), f, 1, (f * dw) / (dh), -f, 10000);
+      -1 * dw / dh * f, f, 1, f * dw / dh, -f, 1000);
  
-  
+  /*  al_perspective_transform(&projection, -1 * dw / dh * f, f,
+      1,
+      f * dw / dh, -f, 1000);
+  */
   /* Set up the camera's position and view transform. */
   /*  al_build_camera_transform(&self->camera_transform, 
       self->position.x, self->position.y, self->position.z,
@@ -225,34 +228,45 @@ Rot3d camera_torque_(Camera * self, Rot3d speed) {
   return self->torque;
 }
 
-/** Gets alpha angle of camera */
+/* Converts radians to degrees. */
+static float rad2deg(float rad) {
+  return (360 * rad) / (2 * ALLEGRO_PI);
+}
+
+/* Converts degrees to radians. */
+static float deg2rad(float rad) {
+  return 2 * ALLEGRO_PI * rad / 360.0;
+}
+
+
+/** Gets alpha angle of camera in degrees. */
 float camera_alpha(Camera * self) {  
-  return self->alpha;
+  return rad2deg(self->alpha);
 }
 
-/** Sets alpha angle of camera.  */
+/** Sets alpha angle of camera in degrees.  */
 float camera_alpha_(Camera * self, float alpha) {
-  return self->alpha = alpha;
+  return self->alpha = deg2rad(alpha);
 }
 
-/** Gets theta angle of camera.  */
+/** Gets theta angle of camera in degrees.  */
 float camera_theta(Camera * self) {
-  return self->theta;
+  return rad2deg(self->theta);
 }
 
-/** Sets theta angle of camera.  */
+/** Sets theta angle of camera in degrees.  */
 float camera_theta_(Camera * self, float theta) {
-  return self->theta = theta;
+  return self->theta = deg2rad(theta);
 }
 
-/** Gets field of view of camera.  */
+/** Gets field of view of camera in degrees.  */
 float camera_fov(Camera * self) {
-  return (360 * self->field_of_view) / (2 * ALLEGRO_PI);
+  return rad2deg(self->field_of_view);
 }
 
 
 /** Sets field of view of camera.  */
 float camera_fov_(Camera * self, float fov) {
-  return self->field_of_view = 2 * ALLEGRO_PI * fov / 360.0;
+  return self->field_of_view = deg2rad(fov);
 }
 
