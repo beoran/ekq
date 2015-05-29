@@ -1,0 +1,53 @@
+Third party licenses of art work used in EKQ:
+
+1) Cloud textures:
+
+data/image/texture/bluecloud_bk_spiney.jpg
+data/image/texture/bluecloud_dn_spiney.jpg
+data/image/texture/bluecloud_ft_spiney.jpg
+data/image/texture/bluecloud_lf_spiney.jpg
+data/image/texture/bluecloud_rt_spiney.jpg
+data/image/texture/bluecloud_up_spiney.jpg
+data/image/texture/graycloud_bk_spiney.jpg
+data/image/texture/graycloud_dn_spiney.jpg
+data/image/texture/graycloud_ft_spiney.jpg
+data/image/texture/graycloud_lf_spiney.jpg
+data/image/texture/graycloud_rt_spiney.jpg
+data/image/texture/graycloud_up_spiney.jpg
+
+Licensed under CC-BY 3.0 from Pieter "Spiney" Verhoeven (http://www.spiney.me/).
+See data/image/texture/spiney.txt for more information.
+
+--------------------------------
+
+2) Sky boxes:
+
+data/image/texture/meadow_bk_humus.jpg
+data/image/texture/meadow_dn_humus.jpg
+data/image/texture/meadow_ft_humus.jpg
+data/image/texture/meadow_lf_humus.jpg
+data/image/texture/meadow_rt_humus.jpg
+data/image/texture/meadow_up_humus.jpg
+
+Licensed under CC-BY 3.0 from Emil Persson, aka Humus. (http://www.humus.name)
+
+See data/image/texture/humus.txt for more information.
+
+--------------------------------
+
+
+3) More cloud textures
+
+
+data/image/texture/clouds1_bk_lukerustltd.bmp
+data/image/texture/clouds1_dn_lukerustltd.bmp
+data/image/texture/clouds1_ft_lukerustltd.bmp
+data/image/texture/clouds1_lf_lukerustltd.bmp
+data/image/texture/clouds1_rt_lukerustltd.bmp
+data/image/texture/clouds1_up_lukerustltd.bmp
+
+
+Author: 
+
+Licensed under CC0 from Luke.RUSTLTD (www.rustltd.com)
+
