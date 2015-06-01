@@ -105,25 +105,25 @@ void skybox_draw(void) {
   );
     
   // sky box sides
-  draw_wall(-500, 500, -500, 1000, -1000,  
+  draw_wall(-500, -500, -500, -1000, 1000,  
     skybox.colors[SKYBOX_DIRECTION_NORTH], skybox.textures[SKYBOX_DIRECTION_NORTH]    
   );  
   
   
-  draw_wall(-500, 500, 500,  1000, -1000, 
+  draw_wall(-500, -500, 500,  1000, 1000, 
     skybox.colors[SKYBOX_DIRECTION_SOUTH], skybox.textures[SKYBOX_DIRECTION_SOUTH]
   );
   
   
-  draw_wall2(-500, 500, -500, -1000, 1000,
+  draw_wall2(-500, -500, -500, 1000, 1000,
     skybox.colors[SKYBOX_DIRECTION_WEST], skybox.textures[SKYBOX_DIRECTION_WEST]      
   );
   
-  draw_wall2(500, 500, -500, -1000, 1000, 
+  draw_wall2(500, -500, -500, 1000, -1000, 
     skybox.colors[SKYBOX_DIRECTION_EAST], skybox.textures[SKYBOX_DIRECTION_EAST]    
   );
   // sky box ceiling.
-  draw_floor(-500, 500, -500, 1000, 1000,
+  draw_floor(-500, 500, -500, -1000, -1000,
     skybox.colors[SKYBOX_DIRECTION_UP], skybox.textures[SKYBOX_DIRECTION_UP]
   );  
 }

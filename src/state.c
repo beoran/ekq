@@ -612,14 +612,14 @@ void draw_test_3d(void) {
   
   // 8draw_floor(-400, -400, -400, 800, 800, scolors, NULL);
   
-  
+  /*
   draw_wall(0, 0, 0, 2, 2, wcolors, walltex);
   draw_wall2(0, 0, 0, 2, 2, wcolors, walltex);
   draw_floor(0, 0, 0, 2, 2, fcolors, floortex);
   draw_wall2(2, 0, 0, 2, 2, wcolors, walltex);
   draw_wall(2, 0, 2, 2, 2, wcolors, walltex);
   draw_wall2(4, 0, 2, 2, 2, wcolors, walltex);
-  
+  */
   
   // al_draw_filled_rectangle(1, 1, 2, 2, yellow);
   

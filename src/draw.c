@@ -246,13 +246,16 @@ void draw_wall(float x, float y, float z, float w, float h,  ALLEGRO_COLOR color
   float u = (bmp ? (al_get_bitmap_width(bmp))   :  1.0);
   float v = (bmp ? (al_get_bitmap_height(bmp))  :  1.0);
   
+  if (w < 0) {  w = -w;   u = -u; }
+  if (h < 0) {  h = -h;   v = -v; }
+  
   ALLEGRO_VERTEX p[] = {         
     {  x + w,  y + h,  z    ,  0.0, 0.0, color[1] },
-    {  x + w,  y    ,  z    ,  0.0,   -v, color[2] },
-    {      x,  y    ,  z    ,    u,   -v, color[3] },
+    {  x + w,  y    ,  z    ,  0.0,   v, color[2] },
+    {      x,  y    ,  z    ,    u,   v, color[3] },
     {  x + w,  y + h,  z    ,  0.0, 0.0, color[1] },
     {  x    ,  y + h,  z    ,    u, 0.0, color[0] },
-    {  x    ,  y    ,  z    ,    u,   -v, color[2] },
+    {  x    ,  y    ,  z    ,    u,   v, color[2] },
   };
   
   al_draw_prim(p, NULL, bmp, 0, 6, ALLEGRO_PRIM_TRIANGLE_LIST);
@@ -265,14 +268,16 @@ void draw_wall2(float x, float y, float z, float h, float d,  ALLEGRO_COLOR colo
   float u = (bmp ? (al_get_bitmap_width(bmp))   :  1.0);
   float v = (bmp ? (al_get_bitmap_height(bmp))  :  1.0);
 
+  if (d < 0) {  d = -d;   u = -u; }
+  if (h < 0) {  h = -h;   v = -v; }
 
   ALLEGRO_VERTEX p[] = {         
     {  x    ,  y + h,  z + d,  0.0, 0.0, color[0] },
-    {  x    ,  y    ,  z    ,    u,   -v, color[2] },
+    {  x    ,  y    ,  z    ,    u,   v, color[2] },
     {  x    ,  y + h,  z    ,    u, 0.0, color[1] },
     {  x    ,  y + h,  z + d,  0.0, 0.0, color[0] },
-    {  x    ,  y    ,  z + d,  0.0,   -v, color[3] },
-    {  x    ,  y    ,  z    ,    u,   -v, color[2] },
+    {  x    ,  y    ,  z + d,  0.0,   v, color[3] },
+    {  x    ,  y    ,  z    ,    u,   v, color[2] },
   };
   
   al_draw_prim(p, NULL, bmp, 0, 6, ALLEGRO_PRIM_TRIANGLE_LIST);
@@ -283,6 +288,9 @@ void draw_wall2(float x, float y, float z, float h, float d,  ALLEGRO_COLOR colo
 void draw_floor(float x, float y, float z, float w, float d,  ALLEGRO_COLOR color[4], ALLEGRO_BITMAP * bmp) {
   float u = (bmp ? (al_get_bitmap_width(bmp))   :  1.0);
   float v = (bmp ? (al_get_bitmap_height(bmp))  :  1.0);
+
+  if (w < 0) {  w = -w;   u = -u; }
+  if (d < 0) {  d = -d;   v = -v; }
 
 
   ALLEGRO_VERTEX p[] = {         

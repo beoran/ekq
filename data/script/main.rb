@@ -160,7 +160,7 @@ module Main
     
     (Eruta::Sky::DIRECTION_NORTH...Eruta::Sky::DIRECTION_DOWN).each do | i | 
       Eruta::Sky.set_texture(i, textures[i].id)
-      (0..3).each { |j| Eruta::Sky.set_color(i, j, 255, 255, 255) }
+      (0..3).each { |j| Eruta::Sky.set_rgb(i, j, 255, 255, 255) }
     end
     
   end
