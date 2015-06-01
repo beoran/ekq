@@ -56,7 +56,8 @@ void draw_wall2(float x, float y, float z, float h, float d,
 void draw_floor(float x, float y, float z, float w, float d,  
                 ALLEGRO_COLOR color[4], ALLEGRO_BITMAP * bmp);
 
-
+void draw_tiled_floor(float x, float y, float z, float w, float d,  
+                      ALLEGRO_COLOR color[4], ALLEGRO_BITMAP * bmp);
 
 #endif /* CFH_DRAW_PROTO */
 

@@ -150,16 +150,16 @@ module Main
 
   def setup_skybox
     textures = [] 
+     
+    textures[Eruta::Sky::DIRECTION_NORTH] = Bitmap.load(:sky_n, '/texture/clouds1_n_lukerustltd.bmp')    
+    textures[Eruta::Sky::DIRECTION_EAST]  = Bitmap.load(:sky_s, '/texture/clouds1_e_lukerustltd.bmp')
+    textures[Eruta::Sky::DIRECTION_SOUTH] = Bitmap.load(:sky_e, '/texture/clouds1_s_lukerustltd.bmp')
+    textures[Eruta::Sky::DIRECTION_WEST]  = Bitmap.load(:sky_w, '/texture/clouds1_w_lukerustltd.bmp')
+    textures[Eruta::Sky::DIRECTION_UP]    = Bitmap.load(:sky_u, '/texture/clouds1_u_lukerustltd.bmp')
+    textures[Eruta::Sky::DIRECTION_DOWN]  = Bitmap.load(:sky_d, '/texture/wests/grass2.png')
     
-    textures[Eruta::Sky::DIRECTION_NORTH] = Bitmap.load(:sky_n, '/image/texture/clouds1_n_lukerustltd.bmp')    
-    textures[Eruta::Sky::DIRECTION_EAST]  = Bitmap.load(:sky_s, '/image/texture/clouds1_e_lukerustltd.bmp')
-    textures[Eruta::Sky::DIRECTION_SOUTH] = Bitmap.load(:sky_e, '/image/texture/clouds1_s_lukerustltd.bmp')
-    textures[Eruta::Sky::DIRECTION_WEST]  = Bitmap.load(:sky_w, '/image/texture/clouds1_w_lukerustltd.bmp')
-    textures[Eruta::Sky::DIRECTION_UP]    = Bitmap.load(:sky_u, '/image/texture/clouds1_u_lukerustltd.bmp')
-    textures[Eruta::Sky::DIRECTION_DOWN]  = Bitmap.load(:sky_d, '/image/texture/clouds1_d_lukerustltd.bmp')
-    
-    (Eruta::Sky::DIRECTION_NORTH...Eruta::Sky::DIRECTION_DOWN).each do | i | 
-      Eruta::Sky.set_texture(i, textures[i].id)
+    (Eruta::Sky::DIRECTION_NORTH..Eruta::Sky::DIRECTION_DOWN).each do | i | 
+      Eruta::Sky.set_texture(i, textures[i].id) if textures[i]
       (0..3).each { |j| Eruta::Sky.set_rgb(i, j, 255, 255, 255) }
     end
     

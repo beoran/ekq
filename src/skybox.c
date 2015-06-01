@@ -100,7 +100,7 @@ void skybox_init(void) {
 /* Draws sky box and floor pane. */
 void skybox_draw(void) {
   // floor pane
-  draw_floor(-500, -0.1, -500, 1000, 1000, 
+  draw_tiled_floor(-500, -0.1, -500, 1000, 1000, 
     skybox.colors[SKYBOX_DIRECTION_DOWN], skybox.textures[SKYBOX_DIRECTION_DOWN]
   );
     

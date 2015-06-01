@@ -563,14 +563,14 @@ void draw_test_3d(void) {
   static ALLEGRO_BITMAP * floortex = NULL;
   
   if (!walltex) {
-    walltex = fifi_load_bitmap("image/texture/wall_1.png");
+    walltex = fifi_load_bitmap("texture/wall_1.png");
     if (!walltex) {
       LOG_ERROR("Could not load wall texture.");
     }
   }
   
   if (!floortex) {
-    floortex = fifi_load_bitmap("image/texture/tile_1.png");
+    floortex = fifi_load_bitmap("texture/tile_1.png");
     if (!floortex) {
       LOG_ERROR("Could not load floor texture.");
     }
@@ -612,14 +612,14 @@ void draw_test_3d(void) {
   
   // 8draw_floor(-400, -400, -400, 800, 800, scolors, NULL);
   
-  /*
+  
   draw_wall(0, 0, 0, 2, 2, wcolors, walltex);
   draw_wall2(0, 0, 0, 2, 2, wcolors, walltex);
   draw_floor(0, 0, 0, 2, 2, fcolors, floortex);
   draw_wall2(2, 0, 0, 2, 2, wcolors, walltex);
   draw_wall(2, 0, 2, 2, 2, wcolors, walltex);
   draw_wall2(4, 0, 2, 2, 2, wcolors, walltex);
-  */
+  
   
   // al_draw_filled_rectangle(1, 1, 2, 2, yellow);
   

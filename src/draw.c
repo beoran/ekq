@@ -306,4 +306,26 @@ void draw_floor(float x, float y, float z, float w, float d,  ALLEGRO_COLOR colo
 }
 
 
+/* Draws a horizontal floor with 4 colors for the corners and one texture
+ * tiled to the surface. */
+void draw_tiled_floor(float x, float y, float z, float w, float d,  ALLEGRO_COLOR color[4], ALLEGRO_BITMAP * bmp) {
+  float u = (bmp ? (al_get_bitmap_width(bmp))   :  1.0) * fabs(w) / 2.0;
+  float v = (bmp ? (al_get_bitmap_height(bmp))  :  1.0) * fabs(d) / 2.0;
+
+  if (w < 0) {  w = -w;   u = -u; }
+  if (d < 0) {  d = -d;   v = -v; }
+
+
+  ALLEGRO_VERTEX p[] = {         
+    {  x + w,  y    ,  z + d,  0.0, 0.0, color[2] },
+    {  x + w,  y    ,  z    ,  0.0,   v, color[1] },
+    {      x,  y    ,  z    ,    u,   v, color[0] },
+    {  x + w,  y    ,  z + d,  0.0, 0.0, color[2] },
+    {  x    ,  y    ,  z + d,    u, 0.0, color[3] },
+    {  x    ,  y    ,  z    ,    u,   v, color[0] },
+  };
+  
+  al_draw_prim(p, NULL, bmp, 0, 6, ALLEGRO_PRIM_TRIANGLE_LIST);
+}
+
 
