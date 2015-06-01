@@ -35,6 +35,7 @@ SRC_FILES += src/rh.c
 SRC_FILES += src/scegra.c
 SRC_FILES += src/ses.c
 SRC_FILES += src/silut.c
+SRC_FILES += src/skybox.c
 SRC_FILES += src/sound.c
 SRC_FILES += src/sprite.c
 SRC_FILES += src/spritelist.c

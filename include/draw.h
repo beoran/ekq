@@ -49,6 +49,15 @@ typedef struct DrawScrollingText_ {
 void draw_scrolling_text(DrawScrollingText * scrolling_text);
 
 
+void draw_wall(float x, float y, float z, float w, float h,  
+               ALLEGRO_COLOR color[4], ALLEGRO_BITMAP * bmp);
+void draw_wall2(float x, float y, float z, float h, float d,  
+                ALLEGRO_COLOR color[4], ALLEGRO_BITMAP * bmp);
+void draw_floor(float x, float y, float z, float w, float d,  
+                ALLEGRO_COLOR color[4], ALLEGRO_BITMAP * bmp);
+
+
+
 #endif /* CFH_DRAW_PROTO */
 
 

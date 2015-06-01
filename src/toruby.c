@@ -15,6 +15,8 @@
 #include "sound.h"
 #include "camera.h"
 #include "monolog.h"
+#include "skybox.h"
+
 #include <mruby/hash.h>
 #include <mruby/class.h>
 #include <mruby/data.h>
@@ -246,6 +248,29 @@ static mrb_value tr_lockin_maplayer(mrb_state * mrb, mrb_value self) {
   return mrb_fixnum_value(result);
 }
 
+
+static mrb_value tr_skybox_set_texture(mrb_state * mrb, mrb_value self) {
+  State * state    = state_get();
+  int result;
+  mrb_int   direction, texture;
+  (void) self; (void) mrb;
+  mrb_get_args(mrb, "ii", &direction, &texture);  
+  result = skybox_set_texture(direction, texture);
+  return mrb_fixnum_value(result);
+}
+
+
+static mrb_value tr_skybox_set_rgb(mrb_state * mrb, mrb_value self) {
+  State * state    = state_get();
+  int result;
+  mrb_int   direction, point, r, g, b;
+  (void) self; (void) mrb;
+  mrb_get_args(mrb, "iiiii", &direction, &point, &r, &g, &b);  
+  result = skybox_set_rgb(direction, point, r, g ,b);
+  return mrb_fixnum_value(result);
+}
+
+
 #define TORUBY_CAMERA_TYPE_GETTER(NAME, TOCALL, TYPE, CONVERT)  \
 static mrb_value NAME(mrb_state * mrb, mrb_value self) {  \
   State * state    = state_get();                         \
@@ -390,8 +415,10 @@ int tr_init(mrb_state * mrb) {
   struct RClass *eru;
   struct RClass *aud;
   struct RClass *cam;
+  struct RClass *sky;
   
   eru = mrb_define_module(mrb, "Eruta");
+  
   pth = mrb_define_class_under(mrb, eru, "Path"  , mrb->object_class);
   MRB_SET_INSTANCE_TT(pth, MRB_TT_DATA);
   
@@ -449,6 +476,23 @@ int tr_init(mrb_state * mrb) {
   TR_CLASS_METHOD_ARGC(mrb, cam, "alpha=", tr_camera_alpha_, 1);
   TR_CLASS_METHOD_ARGC(mrb, cam, "theta=", tr_camera_theta_, 1);
   TR_CLASS_METHOD_ARGC(mrb, cam, "fov="  , tr_camera_fov_, 1);
+
+
+  sky = mrb_define_module_under(mrb, eru, "Sky");
+  TR_CLASS_METHOD_ARGC(mrb, sky, "set_texture", tr_skybox_set_texture, 2);
+  TR_CLASS_METHOD_ARGC(mrb, sky, "set_rgb"  , tr_skybox_set_rgb, 5);
+  
+  TR_CONST_INT_EASY(mrb, sky, SKYBOX_, DIRECTION_UP);
+  TR_CONST_INT_EASY(mrb, sky, SKYBOX_, DIRECTION_DOWN);
+  TR_CONST_INT_EASY(mrb, sky, SKYBOX_, DIRECTION_NORTH);
+  TR_CONST_INT_EASY(mrb, sky, SKYBOX_, DIRECTION_EAST);
+  TR_CONST_INT_EASY(mrb, sky, SKYBOX_, DIRECTION_SOUTH);
+  TR_CONST_INT_EASY(mrb, sky, SKYBOX_, DIRECTION_WEST);
+  
+
+
+  TR_CONST_INT(mrb, eru, "FLIP_HORIZONTAL", ALLEGRO_FLIP_HORIZONTAL); 
+  
 
 
   /*

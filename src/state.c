@@ -15,6 +15,7 @@
 #include "monolog.h"
 #include "callrb.h"
 #include "store.h"
+#include "skybox.h"
 
 /* The data struct contains all global state and other data of the application.
 */
@@ -506,7 +507,8 @@ State * state_init(State * self, BOOL fullscreen) {
   self->show_fps  = TRUE;
   self->show_graph= TRUE;
   
-  
+  /* Set up sky box */
+  skybox_init();
   
   
   return self;
@@ -553,63 +555,7 @@ void state_scale_display(State * self) {
    al_translate_transform(&transform, offset_x, offset_y);
    al_use_transform(&transform);
    /* al_set_clipping_rectangle(offset_x, offset_y, SCREEN_W, SCREEN_H); */
-   
-   
 }
-
-/* Coordinates of x,y,z are that of the bottom left hand corner of the wall. */
-void draw_wall(float x, float y, float z, float w, float h,  ALLEGRO_COLOR * color[4], ALLEGRO_BITMAP * bmp) {
-  float u = (bmp ? (al_get_bitmap_width(bmp))   :  1.0);
-  float v = (bmp ? (al_get_bitmap_height(bmp))  :  1.0);
-  
-  ALLEGRO_VERTEX p[] = {         
-    {  x + w,  y + h,  z    ,  0.0, 0.0, *color[1] },
-    {  x + w,  y    ,  z    ,  0.0,   v, *color[2] },
-    {      x,  y    ,  z    ,    u,   v, *color[3] },
-    {  x + w,  y + h,  z    ,  0.0, 0.0, *color[1] },
-    {  x    ,  y + h,  z    ,    u, 0.0, *color[0] },
-    {  x    ,  y    ,  z    ,    u,   v, *color[2] },
-  };
-  
-  al_draw_prim(p, NULL, bmp, 0, 6, ALLEGRO_PRIM_TRIANGLE_LIST);
-}
-
-
-void draw_wall2(float x, float y, float z, float h, float d,  ALLEGRO_COLOR * color[4], ALLEGRO_BITMAP * bmp) {
-  float u = (bmp ? (al_get_bitmap_width(bmp))   :  1.0);
-  float v = (bmp ? (al_get_bitmap_height(bmp))  :  1.0);
-
-
-  ALLEGRO_VERTEX p[] = {         
-    {  x    ,  y + h,  z + d,  0.0, 0.0, *color[0] },
-    {  x    ,  y    ,  z    ,    u,   v, *color[2] },
-    {  x    ,  y + h,  z    ,    u, 0.0, *color[1] },
-    {  x    ,  y + h,  z + d,  0.0, 0.0, *color[0] },
-    {  x    ,  y    ,  z + d,  0.0,   v, *color[3] },
-    {  x    ,  y    ,  z    ,    u,   v, *color[2] },
-  };
-  
-  al_draw_prim(p, NULL, bmp, 0, 6, ALLEGRO_PRIM_TRIANGLE_LIST);
-}
-
-
-void draw_floor(float x, float y, float z, float w, float d,  ALLEGRO_COLOR * color[4], ALLEGRO_BITMAP * bmp) {
-  float u = (bmp ? (al_get_bitmap_width(bmp))   :  1.0);
-  float v = (bmp ? (al_get_bitmap_height(bmp))  :  1.0);
-
-
-  ALLEGRO_VERTEX p[] = {         
-    {  x + w,  y    ,  z + d,  0.0, 0.0, *color[2] },
-    {  x + w,  y    ,  z    ,  0.0,   v, *color[1] },
-    {      x,  y    ,  z    ,    u,   v, *color[0] },
-    {  x + w,  y    ,  z + d,  0.0, 0.0, *color[2] },
-    {  x    ,  y    ,  z + d,    u, 0.0, *color[3] },
-    {  x    ,  y    ,  z    ,    u,   v, *color[0] },
-  };
-  
-  al_draw_prim(p, NULL, bmp, 0, 6, ALLEGRO_PRIM_TRIANGLE_LIST);
-}
-
 
 
 void draw_test_3d(void) {
@@ -631,9 +577,9 @@ void draw_test_3d(void) {
   }
   
   
-  ALLEGRO_COLOR c1          = al_map_rgb(180, 100, 100);
-  ALLEGRO_COLOR c2          = al_map_rgb(60 , 50, 50);
-  ALLEGRO_COLOR c3          = al_map_rgb(25 , 50, 25);
+  ALLEGRO_COLOR c1          = al_map_rgb(250, 240, 240);
+  ALLEGRO_COLOR c2          = al_map_rgb(210, 200, 200);
+  ALLEGRO_COLOR c3          = al_map_rgb(210 ,200, 200);
   ALLEGRO_COLOR c4          = al_map_rgb(100, 100, 250);
   ALLEGRO_COLOR c5          = al_map_rgb(150, 150, 200);
   ALLEGRO_COLOR c6          = al_map_rgb(80 , 20, 10);
@@ -642,15 +588,17 @@ void draw_test_3d(void) {
   
   
   
-  ALLEGRO_COLOR *fcolors[4] = { &c3, &c3, &c3, &c3 };
-  ALLEGRO_COLOR *wcolors[4] = { &c1, &c1, &c2, &c2 };
-  ALLEGRO_COLOR *scolors[4] = { &c4, &c4, &c5, &c5 };
-  ALLEGRO_COLOR *ucolors[4] = { &c5, &c5, &c5, &c5 };
-  ALLEGRO_COLOR *bcolors[4] = { &cb, &cb, &cb, &cb };
-  ALLEGRO_COLOR *icolors[4] = { &cw, &cw, &cw, &cw };
+  ALLEGRO_COLOR fcolors[4]  = { c3, c3, c3, c3 };
+  ALLEGRO_COLOR wcolors[4]  = { c1, c1, c2, c2 };
+  ALLEGRO_COLOR scolors[4]  = { c4, c4, c5, c5 };
+  ALLEGRO_COLOR ucolors[4]  = { c5, c5, c5, c5 };
+  ALLEGRO_COLOR bcolors[4]  = { cb, cb, cb, cb };
+  ALLEGRO_COLOR icolors[4]  = { cw, cw, cw, cw };
   
   // Sky box and floor pane
-   
+  skybox_draw();
+  
+  /*
   // floor pane
   draw_floor(-500, -0.1, -500, 1000, 1000, bcolors, NULL);
   // sky box sides
@@ -660,7 +608,7 @@ void draw_test_3d(void) {
   draw_wall2(500, 500, -500, -500, 1000, scolors, NULL);
   // sky box ceiling.
   draw_floor(-500, 500, -500, 1000, 1000, ucolors, NULL);
-
+  */
   
   // 8draw_floor(-400, -400, -400, 800, 800, scolors, NULL);
   
@@ -766,7 +714,8 @@ void state_draw(State * self) {
   
   /* Draw the console (will autohide if not active). */
   bbwidget_draw((BBWidget *)state_console(self));
-  // state_scale_display(self); /* XXX: will this work for 3D projection??? */
+  /* XXX: will this work for 3D projection??? */
+  state_scale_display(self); 
 }
 
 

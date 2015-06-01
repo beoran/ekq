@@ -236,3 +236,66 @@ Image * image_copy_region
 }
 
 
+/* 3D drawing functions. */
+
+/* 
+ * Draws an E/W oriented wall with 4 colors for the corners and one texture.
+ * Coordinates of x,y,z are that of the bottom left hand corner of the wall. */
+ 
+void draw_wall(float x, float y, float z, float w, float h,  ALLEGRO_COLOR color[4], ALLEGRO_BITMAP * bmp) {
+  float u = (bmp ? (al_get_bitmap_width(bmp))   :  1.0);
+  float v = (bmp ? (al_get_bitmap_height(bmp))  :  1.0);
+  
+  ALLEGRO_VERTEX p[] = {         
+    {  x + w,  y + h,  z    ,  0.0, 0.0, color[1] },
+    {  x + w,  y    ,  z    ,  0.0,   -v, color[2] },
+    {      x,  y    ,  z    ,    u,   -v, color[3] },
+    {  x + w,  y + h,  z    ,  0.0, 0.0, color[1] },
+    {  x    ,  y + h,  z    ,    u, 0.0, color[0] },
+    {  x    ,  y    ,  z    ,    u,   -v, color[2] },
+  };
+  
+  al_draw_prim(p, NULL, bmp, 0, 6, ALLEGRO_PRIM_TRIANGLE_LIST);
+}
+
+
+/* Draws a N/S oriented wall with 4 colors for the corners and one texture. */
+
+void draw_wall2(float x, float y, float z, float h, float d,  ALLEGRO_COLOR color[4], ALLEGRO_BITMAP * bmp) {
+  float u = (bmp ? (al_get_bitmap_width(bmp))   :  1.0);
+  float v = (bmp ? (al_get_bitmap_height(bmp))  :  1.0);
+
+
+  ALLEGRO_VERTEX p[] = {         
+    {  x    ,  y + h,  z + d,  0.0, 0.0, color[0] },
+    {  x    ,  y    ,  z    ,    u,   -v, color[2] },
+    {  x    ,  y + h,  z    ,    u, 0.0, color[1] },
+    {  x    ,  y + h,  z + d,  0.0, 0.0, color[0] },
+    {  x    ,  y    ,  z + d,  0.0,   -v, color[3] },
+    {  x    ,  y    ,  z    ,    u,   -v, color[2] },
+  };
+  
+  al_draw_prim(p, NULL, bmp, 0, 6, ALLEGRO_PRIM_TRIANGLE_LIST);
+}
+
+
+/* Draws a horizontal floor with 4 colors for the corners and one texture. */
+void draw_floor(float x, float y, float z, float w, float d,  ALLEGRO_COLOR color[4], ALLEGRO_BITMAP * bmp) {
+  float u = (bmp ? (al_get_bitmap_width(bmp))   :  1.0);
+  float v = (bmp ? (al_get_bitmap_height(bmp))  :  1.0);
+
+
+  ALLEGRO_VERTEX p[] = {         
+    {  x + w,  y    ,  z + d,  0.0, 0.0, color[2] },
+    {  x + w,  y    ,  z    ,  0.0,   v, color[1] },
+    {      x,  y    ,  z    ,    u,   v, color[0] },
+    {  x + w,  y    ,  z + d,  0.0, 0.0, color[2] },
+    {  x    ,  y    ,  z + d,    u, 0.0, color[3] },
+    {  x    ,  y    ,  z    ,    u,   v, color[0] },
+  };
+  
+  al_draw_prim(p, NULL, bmp, 0, 6, ALLEGRO_PRIM_TRIANGLE_LIST);
+}
+
+
+

@@ -64,6 +64,14 @@ script 'helpers.rb'
 puts "Hi from ruby!"
 
 
+MAZE_1 = %{
+  +---+---+-^-+---+
+  |   I   <       |
+  ----+---+-v-+   +
+              |   |
+              +---+ 
+}
+
 
 module Main
 
@@ -140,7 +148,26 @@ module Main
   end
 
 
+  def setup_skybox
+    textures = [] 
+    
+    textures[Eruta::Sky::DIRECTION_NORTH] = Bitmap.load(:sky_n, '/image/texture/clouds1_n_lukerustltd.bmp')    
+    textures[Eruta::Sky::DIRECTION_EAST]  = Bitmap.load(:sky_s, '/image/texture/clouds1_e_lukerustltd.bmp')
+    textures[Eruta::Sky::DIRECTION_SOUTH] = Bitmap.load(:sky_e, '/image/texture/clouds1_s_lukerustltd.bmp')
+    textures[Eruta::Sky::DIRECTION_WEST]  = Bitmap.load(:sky_w, '/image/texture/clouds1_w_lukerustltd.bmp')
+    textures[Eruta::Sky::DIRECTION_UP]    = Bitmap.load(:sky_u, '/image/texture/clouds1_u_lukerustltd.bmp')
+    textures[Eruta::Sky::DIRECTION_DOWN]  = Bitmap.load(:sky_d, '/image/texture/clouds1_d_lukerustltd.bmp')
+    
+    (Eruta::Sky::DIRECTION_NORTH...Eruta::Sky::DIRECTION_DOWN).each do | i | 
+      Eruta::Sky.set_texture(i, textures[i].id)
+      (0..3).each { |j| Eruta::Sky.set_color(i, j, 255, 255, 255) }
+    end
+    
+  end
+
+
   def do_start_test_map
+      setup_skybox
       # start_load_tilemap
       # start_load_sprites
       # start_load_stuff
