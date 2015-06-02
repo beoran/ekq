@@ -27,6 +27,7 @@ SRC_FILES += src/laytext.c
 SRC_FILES += src/maze.c
 SRC_FILES += src/mem.c
 SRC_FILES += src/monolog.c
+SRC_FILES += src/model.c
 SRC_FILES += src/pointergrid.c
 SRC_FILES += src/react.c
 SRC_FILES += src/rebox.c
@@ -59,6 +60,8 @@ SRC_FILES += src/widget.c
 SRC_FILES += src/xresor.c
 SRC_FILES += src/zori.c
 
+TEST_FILES = test/test_model.c
+
 MAIN_FILE  = src/main.c
 
 ALLEGRO_LIBS  = -lallegro_acodec -lallegro_audio
@@ -75,9 +78,20 @@ LDFLAGS = -L /usr/local/lib $(ALLEGRO_LIBS) $(MRUBY_LIBS) -lm
 !cc = |> ^ CC %f ^ gcc  $(CFLAGS) -c %f -o %o |>
 !ld = |> gcc %f $(LDFLAGS) -o %o |> 
 
-: foreach $(SRC_FILES) |> !cc |>  build/%B.o {objects}
-: $(MAIN_FILE) |> !cc |>  build/%B.o {main}
+: foreach $(SRC_FILES) |> !cc |>  build/obj/%B.o {objects}
+: $(MAIN_FILE) |> !cc |>  build/main/%B.o {main}
 : {objects} {main} |> !ld |> bin/ekq
+
+!ld_test = |> gcc %f $(LDFLAGS) -o %o |> 
+
+# Compile and link tests. Vecingly foreach seems of no avail for the 
+# linking step.
+
+: foreach $(TEST_FILES) |> !cc |>  build/test/%B.o {test_objects}
+: {objects} build/test/test_model.o |> !ld |> bin/test_model
+
+# : foreach $(TEST_FILES) |> echo %f |>
+
 
 # ^ LINK %f ^
 

@@ -16,6 +16,7 @@
 #include "callrb.h"
 #include "store.h"
 #include "skybox.h"
+#include "model.h"
 
 /* The data struct contains all global state and other data of the application.
 */
@@ -346,7 +347,7 @@ State * state_init(State * self, BOOL fullscreen) {
 
   // Initialize loggers
   monolog_add_logger(NULL, &state_stderr_logger);
-  monolog_add_logger(fopen("eqk.log", "a"), &state_file_logger);
+  monolog_add_logger(fopen("ekq.log", "a"), &state_file_logger);
   // initialize log levels
   LOG_ENABLE_ERROR();
   LOG_ENABLE_WARNING();
@@ -561,6 +562,21 @@ void state_scale_display(State * self) {
 void draw_test_3d(void) {
   static ALLEGRO_BITMAP * walltex  = NULL;
   static ALLEGRO_BITMAP * floortex = NULL;
+  static Model          * model = NULL;
+  static int              motex = -1;
+  
+  if (motex < 0) {
+    motex = store_get_unused_id(0);
+    store_load_bitmap(motex, "model/torch/torch_diffuse.png");
+  }
+  
+  if (!model) {
+    model = model_load_obj_vpath("model/torch/torch.obj");
+    model_set_texture(model, motex);
+    model_set_position(model, -1, 4, -1);
+ 
+    model_set_scale(model, 0.05, 0.05, 0.05);
+  }
   
   if (!walltex) {
     walltex = fifi_load_bitmap("texture/wall_1.png");
@@ -620,6 +636,7 @@ void draw_test_3d(void) {
   draw_wall(2, 0, 2, 2, 2, wcolors, walltex);
   draw_wall2(4, 0, 2, 2, 2, wcolors, walltex);
   
+  if (model) model_draw(model);
   
   // al_draw_filled_rectangle(1, 1, 2, 2, yellow);
   

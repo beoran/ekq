@@ -159,8 +159,10 @@ module Main
     textures[Eruta::Sky::DIRECTION_DOWN]  = Bitmap.load(:sky_d, '/texture/wests/grass2.png')
     
     (Eruta::Sky::DIRECTION_NORTH..Eruta::Sky::DIRECTION_DOWN).each do | i | 
-      Eruta::Sky.set_texture(i, textures[i].id) if textures[i]
-      (0..3).each { |j| Eruta::Sky.set_rgb(i, j, 255, 255, 255) }
+      if textures[i]
+        Eruta::Sky.set_texture(i, textures[i].id) 
+        (0..3).each { |j| Eruta::Sky.set_rgb(i, j, 255, 255, 255) }
+      end
     end
     
   end

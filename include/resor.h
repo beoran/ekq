@@ -12,6 +12,7 @@ enum ResorKind_ {
   RESOR_CONFIG        = 5,
   RESOR_OTHER         = 8,
   RESOR_TILEMAP       = 9,
+  RESOR_MODEL         = 10,
 };
 
 enum ResorStatus_ {
