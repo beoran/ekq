@@ -7,6 +7,7 @@
 #include "store.h"
 #include "bevec.h"
 #include "vec3d.h"
+#include "objfile.h"
 
 /* Space to allocated by default, also used as linear increment. */
 #define MODEL_VERTEX_SPACE 1024
@@ -14,18 +15,30 @@
 #define MODEL_UV_SPACE     1024
 
 
+/* Notes about the OBJ format:
+ * Both texture coordinates and point coordnates are re-used in the f 
+ * declarations. This means that the actual model will have more points 
+ * that there are v statements, since I draw using a triangle list.
+ * Even though the v is the same, if the vt is different then it must be drawn 
+ * using a new polygon.
+ * 
+ */
+
 /* A simple 3D model. May only have a single texture. */
 struct Model_ {
+  /* Obj file from which the model is loaded. Must be kept 
+   * since reassigning the texture means the uv coords have to be recalculated
+   * for allegro's sake. */
+  ObjFile         * objfile; 
+   
+  
   ALLEGRO_VERTEX  * vertices;
   int             * faces;
-  BeVec           * uv; /* This is meant to ease loading obj files, it's otherwise redundant with vertices.*/
   
   int               sverts;
   int               sfaces;
-  int               suv;
   int               nverts;
   int               nfaces;  
-  int               nuv;
   
   ALLEGRO_BITMAP  * texture;
   Vec3d             position;
@@ -45,8 +58,8 @@ Model * model_done(Model * me) {
   me->vertices = NULL;
   free(me->faces);  
   me->faces    = NULL;  
-  free(me->uv);  
-  me->uv       = NULL;  
+  objfile_free(me->objfile);  
+  me->objfile   = NULL;  
   return NULL;
 }
 
@@ -67,9 +80,9 @@ Model * model_init(Model * me) {
   me->texture   = NULL;
   me->vertices  = calloc(MODEL_VERTEX_SPACE, sizeof(*me->vertices));
   me->faces     = calloc(MODEL_FACE_SPACE  , sizeof(*me->faces));  
-  me->uv        = calloc(MODEL_UV_SPACE    , sizeof(*me->uv));  
-    
-  if ((!me->vertices) || (!me->faces) || (!me->uv)) {
+  me->objfile   = NULL; 
+  
+  if ((!me->vertices) || (!me->faces)) {
     return model_done(me);
   }
   
@@ -124,22 +137,6 @@ int model_add_triangle(Model * me, int i1, int i2, int i3) {
   
   me->nfaces               += 3;
   return me->nfaces - 3;  
-}
-
-int model_add_uv(Model * me, float u, float v) {
-  if (me->nuv >= (me->suv)) {
-    int new_size          = me->suv + MODEL_UV_SPACE;
-    BeVec * aid           = realloc(me->uv, sizeof(*me->uv) * new_size);
-    if (!aid) return -1;    
-    me->suv               = new_size;
-    me->uv                = aid;
-  }
-  
-  me->uv[me->nuv].x = u;
-  me->uv[me->nuv].y = v;
-  
-  me->nuv++;
-  return me->nuv - 1;  
 }
 
 
@@ -214,11 +211,6 @@ void model_draw(Model * me) {
 
 }
 
-/* Copies a uv pair from the internal index uvindex to the vertex index vtindex */
-int model_uv_copy(Model * me, int vtindex, int uvindex) {
-  return model_set_uv(me, vtindex, me->uv[uvindex].x, me->uv[uvindex].y);
-}
-
 
 #define MODEL_OBJ_LINE_SIZE 1024
 
@@ -229,8 +221,8 @@ Model * model_parse_obj_line(Model * me, char * line) {
   char fc = line[0];
   char command[64];
   char name[256] = { '\0' };
-  int v1 = 0, v2 = 0, v3 = 0;
-  int t1 = 0, t2 = 0, t3 = 0;
+  int v1 = 0, v2 = 0, v3 = 0, v4=0;
+  int t1 = 0, t2 = 0, t3 = 0, t4=0;
   int n1 = 0, n2 = 0, n3 = 0;
   int i = 0;
   
@@ -243,9 +235,29 @@ Model * model_parse_obj_line(Model * me, char * line) {
   } 
   
   if (sscanf(line, "vt %f %f %f", &u, &v, &w) >= 2) {
-    if (model_add_uv(me, u, v) < 0) return NULL;
+    if (model_add_uv(me, 1 - u, 1 - v) < 0) return NULL;
     return me;    
   }
+
+  /* Simple quad polygon. */
+  if (sscanf(line, "f %d %d %d %d", &v1, &v2, &v3, &v4) == 4) {
+       if (model_add_triangle(me, v1 - 1, v2 - 1, v4 - 1) < 0) return NULL;
+       if (model_add_triangle(me, v2 - 1, v3 - 1, v4 - 1) < 0) return NULL;
+       return me;
+  }
+
+  /* Textured quad polygon. */
+  if (sscanf(line, "f %d/%d %d/%d %d/%d %d/%d", 
+            &v1, &t1, &v2, &t2, &v3, &t3, &v4, &t4) == 8) {       
+       if (model_add_triangle(me, v1 - 1, v2 - 1, v3 - 1) < 0) return NULL;
+       if (model_add_triangle(me, v3 - 1, v4 - 1, v1 - 1) < 0) return NULL;
+       model_uv_copy(me, v1 - 1, t1 - 1);
+       model_uv_copy(me, v2 - 1, t2 - 1);
+       model_uv_copy(me, v3 - 1, t3 - 1);
+       model_uv_copy(me, v4 - 1, t4 - 1);
+       return me;
+  }
+
   
   /* Simple triangle polygon. */
   if (sscanf(line, "f %d %d %d", &v1, &v2, &v3) == 3) {
@@ -253,7 +265,7 @@ Model * model_parse_obj_line(Model * me, char * line) {
        return me;
   }
     
-  /* Textured polygon. */
+  /* Textured triangle polygon. */
   if (sscanf(line, "f %d/%d %d/%d %d/%d", &v1, &t1, &v2, &t2, &v3, &t3) == 6) {       
        if (model_add_triangle(me, v1 - 1, v2 - 1, v3 - 1) < 0) return NULL;
        /* Copy the model's uv data at index t1 to the uv adata of the point v1, etc */
@@ -378,6 +390,7 @@ Model * model_parse_obj_file(Model * me, FILE * file) {
       return NULL;
     }
   }
+    
   return me;
 }
 
@@ -385,7 +398,10 @@ Model * model_parse_obj_file(Model * me, FILE * file) {
 
 Model * model_load_obj_file(FILE * file) {
   Model * me = model_new();
-  return model_parse_obj_file(me, file);
+  if (!model_parse_obj_file(me, file)) {
+    return model_free(me);
+  }
+  return me;
 }
 
 Model * model_load_obj_filename(char * filename) {
@@ -400,6 +416,9 @@ Model * model_load_obj_filename(char * filename) {
   
   if (!me) {
     LOG_ERROR("Parse error or out of memory in obj file %s\n", filename);
+  } else {
+    LOG_NOTE("Loaded model from %s with %d points and %d tris and %d uvs\n", 
+          filename, me->nverts, me->nfaces, me->nuv);
   }
   
   fclose(file);

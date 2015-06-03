@@ -28,6 +28,7 @@ SRC_FILES += src/maze.c
 SRC_FILES += src/mem.c
 SRC_FILES += src/monolog.c
 SRC_FILES += src/model.c
+SRC_FILES += src/objfile.c
 SRC_FILES += src/pointergrid.c
 SRC_FILES += src/react.c
 SRC_FILES += src/rebox.c
@@ -61,6 +62,7 @@ SRC_FILES += src/xresor.c
 SRC_FILES += src/zori.c
 
 TEST_FILES = test/test_model.c
+          += test/test_objfile.c
 
 MAIN_FILE  = src/main.c
 
@@ -89,6 +91,9 @@ LDFLAGS = -L /usr/local/lib $(ALLEGRO_LIBS) $(MRUBY_LIBS) -lm
 
 : foreach $(TEST_FILES) |> !cc |>  build/test/%B.o {test_objects}
 : {objects} build/test/test_model.o |> !ld |> bin/test_model
+
+: test/test_objfile.c |> !cc |>  build/test/%B.o {test_objects}
+: {objects} build/test/test_objfile.o |> !ld |> bin/test_objfile
 
 # : foreach $(TEST_FILES) |> echo %f |>
 
