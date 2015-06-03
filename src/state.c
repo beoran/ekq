@@ -567,15 +567,16 @@ void draw_test_3d(void) {
   
   if (motex < 0) {
     motex = store_get_unused_id(0);
-    store_load_bitmap(motex, "model/torch/torch_diffuse.png");
+    store_load_bitmap(motex, "model/berry/berry.png");
   }
   
   if (!model) {
-    model = model_load_obj_vpath("model/torch/torch.obj");
+    model = model_load_obj_vpath("model/berry/berry.obj");
+    LOG_NOTE("Model: %p\n", model);
     model_set_texture(model, motex);
-    model_set_position(model, -1, 4, -1);
+    model_set_position(model, 0.75, 1, 0.75);
  
-    model_set_scale(model, 0.05, 0.05, 0.05);
+    // model_set_scale(model, 0.05, 0.05, 0.05);
   }
   
   if (!walltex) {
