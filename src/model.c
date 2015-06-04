@@ -53,12 +53,30 @@ Model * model_alloc() {
   return calloc(sizeof(Model), 1);
 }
 
-Model * model_done(Model * me) {  
+Model * model_remove_all_vertices(Model * me) {
+  if (!me) return NULL;
   free(me->vertices);
   me->vertices = NULL;
-  free(me->faces);  
-  me->faces    = NULL;  
-  objfile_free(me->objfile);  
+  me->nverts   = 0;
+  me->sverts   = 0;
+  return me;  
+}
+
+Model * model_remove_all_faces(Model * me) {
+  if (!me) return NULL;
+  free(me->faces);
+  me->faces   = NULL;
+  me->nfaces  = 0;
+  me->sfaces  = 0;
+  return me;  
+}
+
+
+Model * model_done(Model * me) {  
+  if (!me) return NULL;
+  model_remove_all_vertices(me);
+  model_remove_all_faces(me);
+  objfile_free(me->objfile);
   me->objfile   = NULL;  
   return NULL;
 }
@@ -158,9 +176,15 @@ int model_set_uv(Model * me, int index, float u, float v) {
   return index;
 }
 
-/* Sets the texture of the model by using a bitmap index from the resource store. */
+
+Model * model_convert_from_objfile(Model * me , ObjFile * objfile);
+
+/* Sets the texture of the model by using a bitmap index from the resource store. 
+ * This entails a full scale recalculation of the model from it's object file.
+ */
 int model_set_texture(Model * me, int texture) {
     me->texture = store_get_bitmap(texture);
+    model_convert_from_objfile(me , me->objfile);
     return texture;
 }
 
@@ -196,201 +220,97 @@ int model_set_rotation(Model * me, float rx, float ry, float rz) {
 void model_update(Model * me, double dt);
 
 void model_draw(Model * me) {
-  const ALLEGRO_TRANSFORM * save;
-  save = al_get_current_transform();
+  ALLEGRO_TRANSFORM save;
+  const ALLEGRO_TRANSFORM * now;
+  now = al_get_current_transform();
   /* XXX todo: apply and reset model transform. */
-  al_copy_transform(&me->transform, save);
+  al_copy_transform(&save, now);  
+  al_copy_transform(&me->transform, now);
   /**/
-  al_translate_transform_3d(&me->transform, me->position.x, me->position.y, me->position.z);
-  /* al_scale_transform_3d(&me->transform, me->size.x, me->size.y, me->size.z); */
+  
+  /* This almost worked but it's not correct:
+   * al_scale_transform_3d(&me->transform, me->size.x, me->size.y, me->size.z); 
+   * al_translate_transform_3d(&me->transform, me->position.x * me->size.x, me->position.y * me->size.y, me->position.z * me->size.z);  
+   * */
+  
+  /*  Rotates also don't work, why?
+   * al_rotate_transform_3d(&me->transform, 1, 0, 0, me->rotation.rx);
+  al_rotate_transform_3d(&me->transform, 0, 1, 0, me->rotation.ry);
+  al_rotate_transform_3d(&me->transform, 0, 0, 1, me->rotation.rz);    
+  */
+  al_translate_transform_3d(&me->transform, me->position.x, me->position.y, me->position.z);  
+  /* al_translate_transform_3d(&me->transform, me->position.x, me->position.y, me->position.z);  */
+  /* XXX: Scaling also almost works but the object seems to "float"
+   * al_scale_transform_3d(&me->transform, me->size.x, me->size.y, me->size.z); 
+   */
+  
   al_use_transform(&me->transform);
   
   al_draw_indexed_prim(me->vertices, NULL, me->texture, me->faces, me->nverts, ALLEGRO_PRIM_TRIANGLE_LIST);
   // al_identity_transform(&me->transform);
-  al_use_transform(save);
+  al_use_transform(&save);
 
 }
 
 
-#define MODEL_OBJ_LINE_SIZE 1024
+/* Fills in or updates the data of the model with that of the given obj file.
+ * The model's texture is used to generatecorrect UV coordinates for drawing. 
+ * The model's points and textures are emptied for this operation.
+ */
+Model * model_convert_from_objfile(Model * me , ObjFile * objfile) {
+  int index, pindex;
 
-
-Model * model_parse_obj_line(Model * me, char * line) {
-  float f1 = 0.0, f2 = 0.0, f3 = 0.0;
-  float u = 0.0, v = 0.0, w = 0.0;
-  char fc = line[0];
-  char command[64];
-  char name[256] = { '\0' };
-  int v1 = 0, v2 = 0, v3 = 0, v4=0;
-  int t1 = 0, t2 = 0, t3 = 0, t4=0;
-  int n1 = 0, n2 = 0, n3 = 0;
-  int i = 0;
+  if (!model_remove_all_faces(me))    return NULL;
+  if (!model_remove_all_vertices(me)) return NULL;
   
-  /* ignore comments */
-  if (fc == '#') return me; 
-  
-  if (sscanf(line, "v %f %f %f", &f1, &f2, &f3) == 3) {
-    if (model_add_vertex(me, f1, f2, f3) < 0) return NULL;
-    return me;    
-  } 
-  
-  if (sscanf(line, "vt %f %f %f", &u, &v, &w) >= 2) {
-    if (model_add_uv(me, 1 - u, 1 - v) < 0) return NULL;
-    return me;    
-  }
-
-  /* Simple quad polygon. */
-  if (sscanf(line, "f %d %d %d %d", &v1, &v2, &v3, &v4) == 4) {
-       if (model_add_triangle(me, v1 - 1, v2 - 1, v4 - 1) < 0) return NULL;
-       if (model_add_triangle(me, v2 - 1, v3 - 1, v4 - 1) < 0) return NULL;
-       return me;
-  }
-
-  /* Textured quad polygon. */
-  if (sscanf(line, "f %d/%d %d/%d %d/%d %d/%d", 
-            &v1, &t1, &v2, &t2, &v3, &t3, &v4, &t4) == 8) {       
-       if (model_add_triangle(me, v1 - 1, v2 - 1, v3 - 1) < 0) return NULL;
-       if (model_add_triangle(me, v3 - 1, v4 - 1, v1 - 1) < 0) return NULL;
-       model_uv_copy(me, v1 - 1, t1 - 1);
-       model_uv_copy(me, v2 - 1, t2 - 1);
-       model_uv_copy(me, v3 - 1, t3 - 1);
-       model_uv_copy(me, v4 - 1, t4 - 1);
-       return me;
-  }
-
-  
-  /* Simple triangle polygon. */
-  if (sscanf(line, "f %d %d %d", &v1, &v2, &v3) == 3) {
-       if (model_add_triangle(me, v1 - 1, v2 - 1, v3 - 1) < 0) return NULL;
-       return me;
-  }
-    
-  /* Textured triangle polygon. */
-  if (sscanf(line, "f %d/%d %d/%d %d/%d", &v1, &t1, &v2, &t2, &v3, &t3) == 6) {       
-       if (model_add_triangle(me, v1 - 1, v2 - 1, v3 - 1) < 0) return NULL;
-       /* Copy the model's uv data at index t1 to the uv adata of the point v1, etc */
-       model_uv_copy(me, v1 - 1, t1 - 1);
-       model_uv_copy(me, v2 - 1, t2 - 1);
-       model_uv_copy(me, v3 - 1, t3 - 1);
-       return me;
-  }
+  for (index = 1; index <= objfile_get_face_count(objfile); index++) {
+    int my_idx[16];
+    ObjFace * face = objfile_get_face(objfile, index);
+    // First store the face's points into the points of the model
+    for (pindex = 0; (pindex < face->n_points) && (pindex < 16); pindex++) {
+      ObjFacePoint * point = face->points + pindex;
+      Vec3d * v            = objfile_get_vertex(objfile, point->i_v);
+      Vec3d * vt           = objfile_get_vertex(objfile, point->i_vt);
+      if (v) {
+        my_idx[pindex] = model_add_vertex(me, v->x, v->y, v->z);
+      } else {
+        LOG_WARNING("Unknown vertex index %d\n", point->i_v);
+      }
       
-  /* Ignore smooth shading */
-  if (sscanf(line, "s %d", &i) == 1) {
-    return me;
-  }
-  
-  /* Ignore normals */
-  if (sscanf(line, "vb %f %f %f", &f1, &f2, &f3) == 3) {
-    return me;
-  }
-  
-  /* Ignore object names  */
-  if (sscanf(line, "o %255s", name) == 1) {
-    return me;
-  }
-  
-  /* Ignore group names  */
-  if (sscanf(line, "g %255s", name) == 1) {
-    return me;
-  }
-  
-  /* Ignore mtllib statements  */
-  if (sscanf(line, "mtllib %255s", name) == 1) {
-    return me;
-  }
-  
-  /* Ignore usemtl statements  */
-  if (sscanf(line, "usemtl %255s", name) == 1) {
-    return me;
-  }
-  
-  /* Ignore newmtl statements  */
-  if (sscanf(line, "newmtl %255s", name) == 1) {
-    return me;
-  }
+      if (vt && me->texture) {
+        model_set_uv(me, my_idx[pindex], 
+          vt->x  * al_get_bitmap_width(me->texture), 
+         -vt->y  * al_get_bitmap_height(me->texture)
+        );
+      }
+      
+      if (point->mtl) {
+        MtlMaterial * mtl = point->mtl;
+        model_set_rgba(me, my_idx[pindex], mtl->Kd[0], mtl->Kd[1], mtl->Kd[2], 1.0 - mtl->Tr);
+      }  else {
+        model_set_rgba(me, my_idx[pindex], 255, 255, 255, 255);
+      }    
+    }
     
-  /* Ignore Ka statements  */
-  if (sscanf(line, "Ka %f %f %f", &f1, &f2, &f3) == 3) {
-    return me;
+    if (face->n_points == 3) {
+      model_add_triangle(me, my_idx[0], my_idx[1], my_idx[2]);      
+    } else if (face->n_points == 4) {
+      model_add_triangle(me, my_idx[0], my_idx[1], my_idx[2]);
+      model_add_triangle(me, my_idx[0], my_idx[2], my_idx[3]);
+    } else {
+      LOG_WARNING("Only quad or tri faces allowed!\n");
+    }
   }
-  
-  /* Ignore Ks statements  */
-  if (sscanf(line, "Ks %f %f %f", &f1, &f2, &f3) == 3) {
-    return me;
-  }
-  
-  /* Ignore Kd statements  */
-  if (sscanf(line, "Kd %f %f %f", &f1, &f2, &f3) == 3) {
-    return me;
-  }
-  
-  /* Ignore illum statements  */
-  if (sscanf(line, "illum %d", &i) == 1) {
-    return me;
-  }
-  
-  /* Ignore Ns statements  */
-  if (sscanf(line, "Ns %f", &f1) == 1) {
-    return me;
-  }
-  
-  /* Ignore d statements  */
-  if (sscanf(line, "d %f", &f1) == 1) {
-    return me;
-  }
-  
-  /* Ignore Tr statements  */
-  if (sscanf(line, "Tr %f", &f1) == 1) {
-    return me;
-  }
-  
-  /* Ignore map_Ka statements  */
-  if (sscanf(line, "map_Ka %255s", name) == 1) {
-    return me;
-  }
-  
-  /* Ignore map_Kd statements  */
-  if (sscanf(line, "map_Kd %255s", name) == 1) {
-    return me;
-  }
-  
-  /* Ignore map_Kn statements  */
-  if (sscanf(line, "map_Kn %255s", name) == 1) {
-    return me;
-  }
-    
-  
-  
-  // Ignore anything else for now  
-  /* 
-   * LOG_ERROR("Unknown instruction >%c< in obj/mtl file", fc); 
-   * return NULL
-   */
-    
-  return me;
+  return me;    
 }
+
 
 /* obj and mtl file parser. */
 Model * model_parse_obj_file(Model * me, FILE * file) {
-  /* It's reasonable to use a static buffer since line sizes shoun't get THAT long for an obj file. */
-  char buffer[MODEL_OBJ_LINE_SIZE];
-  
-  while (!feof(file)) {
-    char * res = fgets(buffer, sizeof(buffer), file); 
-    if (!res) {
-      if (ferror(file)) {
-        LOG_ERROR("Read error when reading in model file.");
-        return NULL;
-      } else {
-        return me;
-      }
-    }
-    if (!model_parse_obj_line(me, buffer)) { 
-      return NULL;
-    }
-  }
-    
+  if (!me) return NULL;
+  me->objfile = objfile_load_file(file); 
+  if (!me->objfile) return NULL;
+  if (!model_convert_from_objfile(me, me->objfile)) return NULL;
   return me;
 }
 
@@ -417,8 +337,8 @@ Model * model_load_obj_filename(char * filename) {
   if (!me) {
     LOG_ERROR("Parse error or out of memory in obj file %s\n", filename);
   } else {
-    LOG_NOTE("Loaded model from %s with %d points and %d tris and %d uvs\n", 
-          filename, me->nverts, me->nfaces, me->nuv);
+    LOG_NOTE("Loaded model from %s with %d points and %d tris\n", 
+          filename, me->nverts, me->nfaces);
   }
   
   fclose(file);

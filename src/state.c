@@ -564,19 +564,26 @@ void draw_test_3d(void) {
   static ALLEGRO_BITMAP * floortex = NULL;
   static Model          * model = NULL;
   static int              motex = -1;
+  const ALLEGRO_TRANSFORM * now;
+  ALLEGRO_TRANSFORM trans, save;
   
+
+  now = al_get_current_transform();
+  al_copy_transform(&save, now);
+  al_copy_transform(&trans, now);
+
   if (motex < 0) {
     motex = store_get_unused_id(0);
-    store_load_bitmap(motex, "model/berry/berry.png");
+    store_load_bitmap(motex, "model/torch/torch.png");
   }
   
   if (!model) {
-    model = model_load_obj_vpath("model/berry/berry.obj");
+    model = model_load_obj_vpath("model/torch/torch.obj");
     LOG_NOTE("Model: %p\n", model);
     model_set_texture(model, motex);
-    model_set_position(model, 0.75, 1, 0.75);
- 
-    // model_set_scale(model, 0.05, 0.05, 0.05);
+    model_set_position(model, 0.75, 1, 1.5);
+    model_set_scale(model, 0.1, 0.1, 0.1);
+    model_set_rotation(model, 0.0, 0.3, 0.0);
   }
   
   if (!walltex) {
@@ -612,32 +619,30 @@ void draw_test_3d(void) {
   ALLEGRO_COLOR bcolors[4]  = { cb, cb, cb, cb };
   ALLEGRO_COLOR icolors[4]  = { cw, cw, cw, cw };
   
-  // Sky box and floor pane
+  // Draw sky box and floor pane
   skybox_draw();
+  al_identity_transform(&trans); 
+  al_scale_transform_3d(&trans, 0.3, 2, 1);
+  al_rotate_transform_3d(&trans, 0, 1, 0, 2);
+  al_translate_transform_3d(&trans, 1, 1, -4);
+
+  al_compose_transform(&trans, &save);
+  al_use_transform(&trans);
+  
+  draw_wall(0, 0, 0, 2, 2, wcolors, walltex);
+  
+  al_use_transform(&save);
   
   /*
-  // floor pane
-  draw_floor(-500, -0.1, -500, 1000, 1000, bcolors, NULL);
-  // sky box sides
-  draw_wall(-500, 500, -500, 1000, -500, scolors, NULL);  
-  draw_wall(-500, 500, 500,  1000, -500, scolors, NULL);
-  draw_wall2(-500, 500, -500, -500, 1000, scolors, NULL);
-  draw_wall2(500, 500, -500, -500, 1000, scolors, NULL);
-  // sky box ceiling.
-  draw_floor(-500, 500, -500, 1000, 1000, ucolors, NULL);
-  */
-  
-  // 8draw_floor(-400, -400, -400, 800, 800, scolors, NULL);
-  
-  
   draw_wall(0, 0, 0, 2, 2, wcolors, walltex);
   draw_wall2(0, 0, 0, 2, 2, wcolors, walltex);
   draw_floor(0, 0, 0, 2, 2, fcolors, floortex);
   draw_wall2(2, 0, 0, 2, 2, wcolors, walltex);
   draw_wall(2, 0, 2, 2, 2, wcolors, walltex);
   draw_wall2(4, 0, 2, 2, 2, wcolors, walltex);
+  */
   
-  if (model) model_draw(model);
+  // if (model) model_draw(model);
   
   // al_draw_filled_rectangle(1, 1, 2, 2, yellow);
   

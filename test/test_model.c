@@ -14,21 +14,13 @@ TEST_FUNC(model) {
   for (index = 0 ; index < 6000 ; index ++) {
     model_add_vertex(me, index, index, index);
   }
-  
-  for (index = 0 ; index < 6000 ; index ++) {
-    model_add_uv(me, index / 1000.0, index / 1000.0);
-  }
-  
+    
   for (index = 0 ; index < 6000 ; index +=3) {
     model_add_triangle(me, index, index + 1, index+2);
   }
   
   for (index = 0 ; index < 6000 ; index ++) {
     model_set_rgba(me, index, index % 255, index % 255, index % 255, index % 265);
-  }
-  
-  for (index = 0 ; index < 6000 ; index ++) {
-    model_set_uv(me, index, index / 1000.0, index / 1000.0);
   }
   
   model_free(me);
@@ -40,7 +32,7 @@ TEST_FUNC(model) {
 TEST_FUNC(model_load) {
   int index;
   Model * me;  
-  me = model_load_obj_filename("data/model/walltorch/torch.obj");
+  me = model_load_obj_filename("data/model/torch/torch.obj");
   TEST_NOTNULL(me);
   model_free(me);
   TEST_DONE();

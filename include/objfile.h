@@ -82,6 +82,10 @@ ObjFile *  objfile_new();
 
 ObjFile * objfile_free(ObjFile * me);
 ObjFile * objfile_load_filename(char * filename);
+ObjFile * objfile_load_file(FILE * file);
+
+ObjFile * objfile_load_filename(char * filename);
+
 
 int objfile_get_vertex_count(ObjFile * me);
 int objfile_get_uv_count(ObjFile * me);

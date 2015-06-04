@@ -507,6 +507,12 @@ ObjFile * objfile_parse_line(ObjFile * me, char * line) {
   if (sscanf(line, "s %d", &i) == 1) {
     return me;
   }
+ 
+  /* Ignore smooth shading */
+  if (sscanf(line, "s %255s", &name) == 1) {
+    return me;
+  }
+ 
   
   /* Ignore normals */
   if (sscanf(line, "vb %f %f %f", &f1, &f2, &f3) == 3) {

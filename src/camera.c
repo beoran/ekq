@@ -122,6 +122,7 @@ Camera * camera_update(Camera * self, double dt) {
   */  
   
   al_identity_transform(&self->camera_transform);
+
   al_translate_transform_3d(&self->camera_transform, 
       self->position.x, self->position.y, self->position.z);
   
