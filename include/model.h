@@ -25,6 +25,7 @@ int model_set_position(Model * me, float x, float y, float z);
 int model_set_speed(Model * me, float vx, float vy, float vz);
 int model_set_rotation(Model * me, float rx, float ry, float rz);
 int model_set_rgba(Model * me, int index, int r, int g, int b, int a);
+int model_set_angular_speed(Model * me, float vx, float vy, float vz);
 
 void model_update(Model * me, double dt);
 

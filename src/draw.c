@@ -236,13 +236,15 @@ Image * image_copy_region
 }
 
 
-/* 3D drawing functions. */
+/* 3D drawing and transformation functions. */
+
+
 
 /* 
  * Draws an E/W oriented wall with 4 colors for the corners and one texture.
  * Coordinates of x,y,z are that of the bottom left hand corner of the wall. */
  
-void draw_wall(float x, float y, float z, float w, float h,  ALLEGRO_COLOR color[4], ALLEGRO_BITMAP * bmp) {
+void draw_wall_old(float x, float y, float z, float w, float h,  ALLEGRO_COLOR color[4], ALLEGRO_BITMAP * bmp) {
   float u = (bmp ? (al_get_bitmap_width(bmp))   :  1.0);
   float v = (bmp ? (al_get_bitmap_height(bmp))  :  1.0);
   
@@ -259,6 +261,25 @@ void draw_wall(float x, float y, float z, float w, float h,  ALLEGRO_COLOR color
   };
   
   al_draw_prim(p, NULL, bmp, 0, 6, ALLEGRO_PRIM_TRIANGLE_LIST);
+}
+
+void draw_wall(float x, float y, float z, float w, float h,  ALLEGRO_COLOR color[4], ALLEGRO_BITMAP * bmp) {
+  float u = (bmp ? (al_get_bitmap_width(bmp))   :  1.0);
+  float v = (bmp ? (al_get_bitmap_height(bmp))  :  1.0);
+  
+  if (w < 0) {  w = -w;   u = -u; }
+  if (h < 0) {  h = -h;   v = -v; }
+  
+  ALLEGRO_VERTEX p[] = {         
+    {  x + w,  y + h,  z    ,  0.0, 0.0, color[1] },
+    {  x + w,  y    ,  z    ,  0.0,   v, color[2] },
+    {  x    ,  y    ,  z    ,    u,   v, color[3] },
+    {  x    ,  y + h,  z    ,    u, 0.0, color[0] },
+  };
+  
+  int indexes[] = {  0, 1, 2, 0, 3, 2 };
+  
+  al_draw_indexed_prim(p, NULL, bmp, indexes, 6, ALLEGRO_PRIM_TRIANGLE_LIST);
 }
 
 

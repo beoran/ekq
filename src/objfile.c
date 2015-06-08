@@ -196,30 +196,41 @@ ObjFile *  objfile_new() {
   return objfile_init(objfile_alloc());
 }
 
+void * mem_grow_if(void ** array, size_t * nmemb, size_t max, size_t size, size_t grow_by) {
+  void * aid;
+  if (!array) return NULL;
+  if ((*nmemb) < max) return (*array);
+  aid = realloc(*array, (*nmemb + grow_by) * size);
+  if (!aid) return NULL;
+  *nmemb += grow_by;
+  *array = aid;
+  return *array;
+} 
+
+
 #define OBJFILE_GROW_ARRAY(ARR, SIZE, SPACE, BY)                          \
   if (SIZE  >= SPACE) {                                                   \
     int new_s   = SPACE + BY;                                             \
     void * aid  = realloc(ARR, new_s * sizeof (*ARR));                    \
-    if (!aid) return -1;                                                  \
+    if (!aid) return NULL;                                                \
     SPACE       = new_s;                                                  \
     ARR         = aid;                                                    \
   }                                                                       \
-  return SPACE;
+  return ARR;
 
-
-int objfile_grow_v(ObjFile * me) {
+void * objfile_grow_v(ObjFile * me) {
   OBJFILE_GROW_ARRAY(me->v, me->n_v, me->s_v, OBJFILE_ARRAY_GROW);
 }
 
-int objfile_grow_vt(ObjFile * me) {
+void * objfile_grow_vt(ObjFile * me) {
   OBJFILE_GROW_ARRAY(me->vt, me->n_vt, me->s_vt, OBJFILE_ARRAY_GROW);
 }
 
-int objfile_grow_f(ObjFile * me) {
+void * objfile_grow_f(ObjFile * me) {
   OBJFILE_GROW_ARRAY(me->f, me->n_f, me->s_f, OBJFILE_ARRAY_GROW);
 }
 
-int objfile_grow_mtl(ObjFile * me) {
+void * objfile_grow_mtl(ObjFile * me) {
   OBJFILE_GROW_ARRAY(me->mtl, me->n_mtl, me->s_mtl, OBJFILE_ARRAY_GROW);
 }
 
@@ -231,7 +242,7 @@ int mtlmaterial_compare(const void * m1, const void * m2) {
 
 
 int objfile_add_v(ObjFile * me , float x, float y, float z) {
-  if (objfile_grow_v(me) < 0) return -1;
+  if (!objfile_grow_v(me)) return -1;
   me->v[me->n_v].x = x;
   me->v[me->n_v].y = y;  
   me->v[me->n_v].z = z;
@@ -240,7 +251,7 @@ int objfile_add_v(ObjFile * me , float x, float y, float z) {
 }
 
 int objfile_add_vt(ObjFile * me , float u, float v, float w) {
-  if (objfile_grow_vt(me) < 0) return -1;
+  if (!objfile_grow_vt(me)) return -1;
   me->vt[me->n_vt].x = u;
   me->vt[me->n_vt].y = v;  
   me->vt[me->n_vt].z = w;
@@ -250,14 +261,14 @@ int objfile_add_vt(ObjFile * me , float u, float v, float w) {
 
 
 int objfile_add_f(ObjFile * me , ObjFace * face) {
-  if (objfile_grow_f(me) < 0) return -1;
+  if (!objfile_grow_f(me)) return -1;
   me->f[me->n_f] = * face;
   me->n_f++;
   return me->n_f - 1;
 }
 
 int objfile_add_mtl(ObjFile * me , MtlMaterial * material) {
-  if (objfile_grow_mtl(me) < 0) return -1;
+  if (!objfile_grow_mtl(me)) return -1;
   mtlmaterial_copy(me->mtl + me->n_mtl, material);
   me->n_mtl++;
   qsort(me->mtl, me->n_mtl, sizeof(*me->mtl), mtlmaterial_compare);  
@@ -280,21 +291,13 @@ int objfile_get_vertex_count(ObjFile * me) {
 }
 
 int objfile_get_uv_count(ObjFile * me) {
-  return me->n_v;
+  return me->n_vt;
 }
 
 int objfile_get_face_count(ObjFile * me) {
-  return me->n_f;
+  return me->n_f; 
 }
 
-int objfile_get_face_point_count(ObjFile * me, int index) {
-  ObjFace * face;
-  if (!me) return -2;
-  if (index < 1) return -1;
-  if (index > me->n_f) return -1;
-  face = me->f + index - 1;
-  return face->n_points;
-}
 
 ObjFace * objfile_get_face(ObjFile * me, int index) {
   if (!me) return NULL;
@@ -303,13 +306,21 @@ ObjFace * objfile_get_face(ObjFile * me, int index) {
   return me->f + index - 1;
 }
 
-ObjFacePoint * objfile_get_face_point(ObjFile * me, int index, int pindex) {
-  ObjFace * face;
+int objfile_get_face_point_count(ObjFile * me, int index) {
+  ObjFace * face = objfile_get_face(me, index);
+  if (!face) return 0;
+  return face->n_points;
+}
+
+ObjFacePoint * objface_get_point(ObjFace * face, int pindex) {
+  if (!face)      return NULL;
   if (pindex < 0) return NULL;
-  face = objfile_get_face(me, index);
-  if (!face) return NULL;;
   if (pindex >= face->n_points) return NULL;
   return face->points + pindex;
+}
+
+ObjFacePoint * objfile_get_face_point(ObjFile * me, int index, int pindex) {
+  return objface_get_point(objfile_get_face(me, index), pindex);
 }
 
 int objfile_get_face_point_iv(ObjFile * me, int index, int pindex) {
@@ -341,8 +352,8 @@ Vec3d * objfile_get_vertex(ObjFile * me, int index) {
 Vec3d * objfile_get_uv(ObjFile * me, int index) {
   if (!me) return NULL;
   if (index < 1) return NULL;
-  if (index > me->n_v) return NULL;
-  return me->v + index - 1;
+  if (index > me->n_vt) return NULL;
+  return me->vt + index - 1;
 }
 
 
@@ -463,8 +474,14 @@ ObjFile * objfile_parse_line(ObjFile * me, char * line) {
     if (objfile_add_v(me, f1, f2, f3) < 0) return NULL;
     return me;    
   } 
+
+  if (sscanf(line, "vt %f %f", &u, &v) == 2) {
+    if (objfile_add_vt(me, u, v, 0.0) < 0) return NULL;
+    return me;    
+  }
+
   
-  if (sscanf(line, "vt %f %f %f", &u, &v, &w) >= 2) {
+  if (sscanf(line, "vt %f %f %f", &u, &v, &w) == 3) {
     if (objfile_add_vt(me, u, v, w) < 0) return NULL;
     return me;    
   }
@@ -509,7 +526,7 @@ ObjFile * objfile_parse_line(ObjFile * me, char * line) {
   }
  
   /* Ignore smooth shading */
-  if (sscanf(line, "s %255s", &name) == 1) {
+  if (sscanf(line, "s %255s", name) == 1) {
     return me;
   }
  
@@ -566,6 +583,10 @@ ObjFile * objfile_parse_file(ObjFile * me, FILE * file) {
       return NULL;
     }
   }
+  
+
+  LOG_NOTE("Loaded model with %d points and %d faces and %d uvs\n", 
+          me->n_v, me->n_f, me->n_vt);
     
   return me;
 }
@@ -593,7 +614,7 @@ ObjFile * objfile_load_filename(char * filename) {
   if (!me) {
     LOG_ERROR("Parse error or out of memory in obj file %s\n", filename);
   } else {
-    LOG_NOTE("Loaded model from %s with %d points and %d tris and %d uvs\n", 
+    LOG_NOTE("Loaded model from %s with %d points and %d faces and %d uvs\n", 
           filename, me->n_v, me->n_f, me->n_vt);
   }
   

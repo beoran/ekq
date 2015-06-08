@@ -58,6 +58,8 @@ struct ObjFace_ {
 typedef struct ObjFace_ ObjFace;
 
 
+ObjFacePoint * objface_get_point(ObjFace * face, int pindex);
+
 
 /* OBJ file loading. 
  * This doesn't produce a renderable model but load the data 

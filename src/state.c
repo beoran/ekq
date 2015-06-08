@@ -559,11 +559,26 @@ void state_scale_display(State * self) {
 }
 
 
+static ALLEGRO_VERTEX mkv(float x, float y, float z, int r, int g, int b, float u, float v) {
+  ALLEGRO_VERTEX res;
+  res.x = x;
+  res.y = y;
+  res.z = z;
+  res.color = al_map_rgb(r, g, b);
+  res.u = u;
+  res.v = v;
+  return res;
+}
+
 void draw_test_3d(void) {
   static ALLEGRO_BITMAP * walltex  = NULL;
   static ALLEGRO_BITMAP * floortex = NULL;
   static Model          * model = NULL;
+  static Model          * yodel = NULL;
   static int              motex = -1;
+  static ALLEGRO_VERTEX   verts[32];
+  static int              idexs[32];
+  static int init_vert          = 0; 
   const ALLEGRO_TRANSFORM * now;
   ALLEGRO_TRANSFORM trans, save;
   
@@ -572,18 +587,104 @@ void draw_test_3d(void) {
   al_copy_transform(&save, now);
   al_copy_transform(&trans, now);
 
+  #define TEST_MODNAME1 "model/berry/berry"
+  #define TEST_MODNAME2 "model/torch/torch"
+  #define TEST_MODNAME3 "model/cube/cube"
+  #define TEST_MODNAME  TEST_MODNAME1
+
   if (motex < 0) {
     motex = store_get_unused_id(0);
-    store_load_bitmap(motex, "model/torch/torch.png");
+    store_load_bitmap(motex, TEST_MODNAME ".png");
   }
   
   if (!model) {
-    model = model_load_obj_vpath("model/torch/torch.obj");
+    model = model_load_obj_vpath(TEST_MODNAME ".obj");
     LOG_NOTE("Model: %p\n", model);
     model_set_texture(model, motex);
     model_set_position(model, 0.75, 1, 1.5);
-    model_set_scale(model, 0.1, 0.1, 0.1);
-    model_set_rotation(model, 0.0, 0.3, 0.0);
+    model_set_scale(model, 0.5, 0.5, 0.5);
+    model_set_rotation(model, 0.0, 0.0, 0.0);
+    model_set_angular_speed(model, 0.0, 1.0, 0.0);
+    model_set_angular_speed(model, 0.0, 1.0, 0.2);
+    model_set_speed(model, 0.0, 0.0, 0.0); 
+  }
+  
+  if (!yodel) {
+    yodel = model_new();
+    model_add_vertex(yodel, 0, 0, 0);
+    model_add_vertex(yodel, 0, 1, 0);
+    model_add_vertex(yodel, 1, 0, 0);
+    model_add_vertex(yodel, 1, 1, 0);
+    
+    model_add_vertex(yodel, 0, 0, 0);
+    model_add_vertex(yodel, 0, 0, 1);
+    model_add_vertex(yodel, 1, 0, 0);
+    model_add_vertex(yodel, 1, 0, 1);    
+    
+    model_add_vertex(yodel, 0, 0, 0);
+    model_add_vertex(yodel, 0, 0, 1);
+    model_add_vertex(yodel, 0, 1, 1);
+    model_add_vertex(yodel, 0, 1, 0);
+    
+    
+    model_set_rgba(yodel, 0 , 255, 0  , 0  , 255);
+    model_set_rgba(yodel, 1 , 255, 0  , 0  , 255);
+    model_set_rgba(yodel, 2 , 255, 255, 0  , 255);
+    model_set_rgba(yodel, 3 , 255, 0  , 0  , 255);
+    model_set_rgba(yodel, 4 , 0  , 255, 0  , 255);
+    model_set_rgba(yodel, 5 , 0  , 255, 0  , 255);
+    model_set_rgba(yodel, 6 , 0  , 255, 255, 255);
+    model_set_rgba(yodel, 7 , 0  , 255, 0  , 255);
+    model_set_rgba(yodel, 8 , 0  , 0  , 255, 255);
+    model_set_rgba(yodel, 9 , 0  , 0  , 255, 255);
+    model_set_rgba(yodel, 10, 0  , 255, 255, 255);
+    model_set_rgba(yodel, 11, 0  , 0  , 255, 255);
+    
+    
+    model_add_triangle(yodel, 0 , 1 , 3 );
+    model_add_triangle(yodel, 0 , 2 , 3 );
+    model_add_triangle(yodel, 4 , 5 , 7 );
+    model_add_triangle(yodel, 4 , 6 , 7 );
+    model_add_triangle(yodel, 8 , 9 , 10);
+    model_add_triangle(yodel, 8 , 11, 10);
+
+    
+    model_set_position(yodel, 0.75, 1, 1.5);
+    model_set_scale(yodel, 1.0, 1.0, 1.0);
+    model_set_rotation(yodel, 0.0, 0.0, 0.0);
+    model_set_angular_speed(yodel, 0.0, 1.0, 0.0);
+    
+  }
+  
+  if (!init_vert) {
+    init_vert = 1;
+    verts[0] = mkv(0, 0, 0, 255, 0, 0, 0, 0);
+    verts[1] = mkv(0, 1, 0, 255, 0, 0, 0, 0);
+    verts[2] = mkv(1, 0, 0, 255, 0, 0, 0, 0);
+    verts[3] = mkv(1, 1, 0, 255, 255, 0, 0, 0);
+   
+    verts[4] = mkv(0, 0, 0, 255, 255, 0, 0, 0);
+    verts[5] = mkv(0, 0, 1, 255, 255, 0, 0, 0);
+    verts[6] = mkv(1, 0, 0, 255, 255, 0, 0, 0);
+    verts[7] = mkv(1, 0, 1,   0, 255, 0, 0, 0);
+
+    verts[8]  = mkv(0, 0, 0,   0, 255, 0, 0, 0);
+    verts[9]  = mkv(0, 0, 1,   0, 255, 0, 0, 0);
+    verts[10] = mkv(0, 1, 1,   0, 255, 255, 0, 0);
+    verts[11] = mkv(0, 1, 0,   0, 255, 0, 0, 0);
+
+
+    idexs[0] = 0   ;  idexs[1]   = 1   ; idexs[2]  = 3;
+    idexs[3] = 0   ;  idexs[4]   = 2   ; idexs[5]  = 3;
+    
+    idexs[6] = 4   ;  idexs[7]   = 5   ; idexs[8]  = 7;
+    idexs[9] = 4   ;  idexs[10]  = 6   ; idexs[11] = 7;
+   
+    idexs[12] = 8  ;  idexs[13]  = 9   ; idexs[14] = 10;
+    idexs[15] = 8  ;  idexs[16]  = 11  ; idexs[17] = 10;
+   
+   
+    
   }
   
   if (!walltex) {
@@ -611,7 +712,6 @@ void draw_test_3d(void) {
   ALLEGRO_COLOR cw          = al_map_rgb(255, 255, 255);
   
   
-  
   ALLEGRO_COLOR fcolors[4]  = { c3, c3, c3, c3 };
   ALLEGRO_COLOR wcolors[4]  = { c1, c1, c2, c2 };
   ALLEGRO_COLOR scolors[4]  = { c4, c4, c5, c5 };
@@ -621,28 +721,24 @@ void draw_test_3d(void) {
   
   // Draw sky box and floor pane
   skybox_draw();
-  al_identity_transform(&trans); 
-  al_scale_transform_3d(&trans, 0.3, 2, 1);
-  al_rotate_transform_3d(&trans, 0, 1, 0, 2);
-  al_translate_transform_3d(&trans, 1, 1, -4);
-
-  al_compose_transform(&trans, &save);
-  al_use_transform(&trans);
   
   draw_wall(0, 0, 0, 2, 2, wcolors, walltex);
-  
-  al_use_transform(&save);
+
   
   /*
-  draw_wall(0, 0, 0, 2, 2, wcolors, walltex);
   draw_wall2(0, 0, 0, 2, 2, wcolors, walltex);
   draw_floor(0, 0, 0, 2, 2, fcolors, floortex);
   draw_wall2(2, 0, 0, 2, 2, wcolors, walltex);
   draw_wall(2, 0, 2, 2, 2, wcolors, walltex);
   draw_wall2(4, 0, 2, 2, 2, wcolors, walltex);
   */
-  
-  // if (model) model_draw(model);
+
+  if (model) { 
+    model_update(model, 1.0 / 60.0);
+    model_draw(model);
+  }
+
+  // al_draw_indexed_prim(verts, NULL, NULL, idexs, 18, ALLEGRO_PRIM_TRIANGLE_LIST);
   
   // al_draw_filled_rectangle(1, 1, 2, 2, yellow);
   
