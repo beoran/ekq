@@ -2,6 +2,7 @@
 #include "maze.h"
 #include "pointergrid.h"
 #include "dynar.h"
+#include "store.h"
 
 /* A maze is a single "level" or "dungeon" in EKQ and other dungeon crawlers. 
  * A maze consists of a 3D beam-shaped grid of cubical spacesor "cells" for 
@@ -24,24 +25,28 @@
  
  
  
-struct MazeObject_ {
+struct MazeItem_ {
   int id;
   int type;  
+  int visual;
 };
 
 struct MazeWall_ {
-  int used;
-  int direction;
-  int texture;
-  int object;
+  ALLEGRO_BITMAP * texture_bmp;
+  int         used;
+  int         direction;
+  int         texture;
+  int         type;
+  MazeItem    item;
 };
 
 struct MazePillar_ {
+  ALLEGRO_BITMAP * texture_bmp;
   int texture;
   int direction;
 };
 
-#define MAZECELL_WALLS 10
+#define MAZECELL_WALLS MAZE_DIRECTIONS
 
 struct MazeCell_ {
   struct MazeWall_      walls[MAZECELL_WALLS];
@@ -81,7 +86,7 @@ MazeCell * mazecell_init(MazeCell * me, int x, int y) {
 
 
 MazeCell * mazecell_new(int x, int y) {
-  return mazecell_init(mazecell_alloc(x, y));
+  return mazecell_init(mazecell_alloc(), x, y);
 }
 
 MazeCell * mazecell_free(MazeCell * me) {
@@ -183,7 +188,7 @@ MazeFloor * maze_add_floor(Maze * me, int z, int width, int depth) {
   return maze_set_floor(me, z, floor);
 }
 
-MazeCell mazefloor_get_cell(MazeFloor * me, int x, int y) {
+MazeCell * mazefloor_get_cell(MazeFloor * me, int x, int y) {
   if (!me) return NULL;
   return pointergrid_fetch(me->cells, x, y);
 }
@@ -191,22 +196,22 @@ MazeCell mazefloor_get_cell(MazeFloor * me, int x, int y) {
 MazeCell * mazefloor_set_cell(MazeFloor * me, int x, int y, MazeCell * cell) {
   MazeCell * old;
   if (!me) return NULL;
-  old = mazefloor_get_cell(me->cells, x, y);
+  old = mazefloor_get_cell(me, x, y);
   if (old) { mazecell_free(old); }
   pointergrid_put(me->cells, x, y, cell);
   return cell;
 }
 
-MazeCell * mazefloor_add_empty_cell(MazeFloor * me, int x, int y, int z) {
+MazeCell * mazefloor_add_empty_cell(MazeFloor * me, int x, int y) {
   MazeCell * new = mazecell_new(x, y);
   if (!new) return NULL;
-  return mazefloor_set_cell(me, x, y, z, cell);
+  return mazefloor_set_cell(me, x, y, new);
 }
 
-MazeCell * maze_add_empty_cell(Maze * me, int x, int y, int z) {
-  MazeFloor * floor = maze_get_floor(z);
+MazeCell * maze_add_empty_cell(Maze * me, int z, int x, int y) {
+  MazeFloor * floor = maze_get_floor(me, z);
   if (!floor) return NULL;
-  return mazefloor_add_empty_cell(floor, x, y, z);  
+  return mazefloor_add_empty_cell(floor, x, y);
 }
 
 MazeWall * mazecell_get_wall(MazeCell * cell, int dir) {
@@ -216,14 +221,52 @@ MazeWall * mazecell_get_wall(MazeCell * cell, int dir) {
   return cell->walls + dir;
 }
 
-Maze * maze_add_wall(Maze * me, int x, int y, int z, int dir, int type, int texture);
-Maze * maze_set_wall_texture(Maze * me, int x, int y, int z , int dir , int texture);
-Maze * maze_set_wall_item(Maze * me, int x, int y, int z , int dir, int visual);
-Maze * maze_set_wall_type(Maze * me   , int x, int y, int z , int dir , int type);
+MazeWall * mazefloor_get_wall(MazeFloor * floor, int x, int y, int dir) {
+  MazeCell * cell = mazefloor_get_cell(floor, x, y);
+  return mazecell_get_wall(cell, dir);
+}
 
+MazeWall * maze_get_wall(Maze * me, int z, int x, int y, int dir) {
+  return mazefloor_get_wall(maze_get_floor(me, z), x, y, dir);
+}
 
+MazeWall * mazewall_set_texture(MazeWall * wall, int texture) {
+  if (!wall) return NULL;
+  wall->texture      = texture;
+  wall->texture_bmp  = store_get_bitmap(wall->texture);
+  return wall;
+} 
 
-Maze * maze_add_cell_item(Maze * me, int x, int y, int z, int id , int type, int visual);
+MazeWall * maze_add_wall(Maze * me, int z, int x, int y, int dir, int type, int texture) {
+  MazeWall * wall = maze_get_wall(me, z, x, y, dir);
+  if (!wall) return NULL;
+  wall->used         = !0;
+  wall->type         = type;
+  wall->direction    = dir;
+  mazewall_set_texture(wall, texture);
+  return wall;
+}
+
+MazeWall * maze_remove_wall(Maze * me, int z, int x, int y, int dir) {
+  MazeWall * wall = maze_get_wall(me, z, x, y, dir);
+  if (!wall) return NULL;
+  wall->used         = 0;
+  wall->type         = -1;
+  mazewall_set_texture(wall, -1);
+  return wall;
+}
+
+MazeWall * maze_set_wall_texture(Maze * me, int x, int y, int z , int dir , int texture) {
+  MazeWall * wall = maze_get_wall(me, z, x, y, dir);
+  return mazewall_set_texture(wall, texture);
+}
+
+MazeWall * maze_set_wall_item(Maze * me, int x, int y, int z , int dir, int id, int visual) {
+  MazeWall * wall = maze_get_wall(me, z, x, y, dir);
+  if (!wall) return NULL;
+  wall->item.id   = id;
+  return wall;  
+}
 
 
 

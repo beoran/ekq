@@ -23,10 +23,9 @@ enum MazeWallType_ {
   MAZE_WALL_TRIANGLE_UR  = 4,
   MAZE_WALL_TRIANGLE_DL  = 8,
   MAZE_WALL_TRIANGLE_DR  = 16,
-  
 };
 
-typedef struct MazeObject_  MazeObject;
+typedef struct MazeItem_    MazeItem;
 typedef struct MazeWall_    MazeWall;
 typedef struct MazePillar_  MazePillar;
 typedef struct MazeCell_    MazeCell;
@@ -39,11 +38,14 @@ Maze * maze_free(Maze * me);
 MazeFloor * maze_add_floor(Maze * me, int z, int width, int depth);
 MazeCell  * maze_add_empty_cell(Maze * me, int x, int y, int z);
 Maze * maze_add_cell_item(Maze * me, int x, int y, int z, int id , int type, int visual);
-Maze * maze_add_wall(Maze * me, int x, int y, int z, int dir, int type, int texture);
-Maze * maze_set_wall_texture(Maze * me, int x, int y, int z , int dir , int texture);
-Maze * maze_set_wall_item(Maze * me, int x, int y, int z , int dir, int visual);
-Maze * maze_set_wall_type(Maze * me   , int x, int y, int z , int dir , int type);
 
+
+MazeWall * maze_add_wall(Maze * me, int z, int x, int y, int dir, int type, int texture);
+MazeWall * maze_remove_wall(Maze * me, int z, int x, int y, int dir);
+
+MazeWall * maze_set_wall_texture(Maze * me, int z, int x, int y,  int dir , int texture);
+MazeWall * maze_set_wall_item(Maze * me, int z, int x, int y,  int dir, int id, int visual);
+MazeWall * maze_set_wall_type(Maze * me, int z, int x, int y,  int dir, int type);
 
 
 
