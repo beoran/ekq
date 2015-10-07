@@ -50,6 +50,8 @@ MazeWall * maze_set_wall_type(Maze * me, int z, int x, int y,  int dir, int type
 
 
 
+Maze * maze_load_vpath(char * vpath);
+int maze_save_vpath(Maze * maze, char * vpath);
 
 
 

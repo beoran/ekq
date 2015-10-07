@@ -322,22 +322,24 @@ void model_draw(Model * me) {
 }
 
 
+#define MODEL_OBJFILE_FACES_MAX 16
+
 /* Fills in or updates the data of the model with that of the given obj file.
  * The model's texture is used to generate correct UV coordinates for drawing. 
  * The model's points and textures are emptied for this operation.
  */
 Model * model_convert_from_objfile(Model * me , ObjFile * objfile) {
-  int index, pindex;
+  int index, pindex, findex;
 
   if (!objfile) return NULL;
   if (!model_remove_all_faces(me))    return NULL;
   if (!model_remove_all_vertices(me)) return NULL;
   
   for (index = 1; index <= objfile_get_face_count(objfile); index++) {
-    int my_idx[16];
+    int my_idx[MODEL_OBJFILE_FACES_MAX];
     ObjFace * face = objfile_get_face(objfile, index);
     // First store the face's points into the points of the model
-    for (pindex = 0; (pindex < face->n_points) && (pindex < 16); pindex++) {
+    for (pindex = 0; (pindex < face->n_points) && (pindex < ); pindex++) {
       ObjFacePoint * point = objface_get_point(face, pindex);
       if (!point) { 
         LOG_WARNING("Misssing point? %d\n", pindex);
@@ -367,7 +369,7 @@ Model * model_convert_from_objfile(Model * me , ObjFile * objfile) {
     if (face->n_points == 3) {
       model_add_triangle(me, my_idx[0], my_idx[1], my_idx[2]);      
     } else if (face->n_points == 4) {
-      // the quads aren't drawn fro the latter half, why?... 
+      // the quads aren't drawn for the latter half, why?...
       // If one of the two sets of tris is added it seems to work (apart from the holes).
       model_add_triangle(me, my_idx[0], my_idx[1], my_idx[2]);
       model_add_triangle(me, my_idx[0], my_idx[2], my_idx[3]);      

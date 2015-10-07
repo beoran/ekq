@@ -17,6 +17,8 @@
 #include "store.h"
 #include "skybox.h"
 #include "model.h"
+#include "maze.h"
+
 
 /* The data struct contains all global state and other data of the application.
 */
@@ -84,6 +86,9 @@ struct State_ {
    Implemented in C so it's usable even if there are script bugs.   
   */
   BBConsole           * console;
+  
+  /* The currently active 3D maze if any */
+  Maze                * maze;
   
 };
 
@@ -177,6 +182,16 @@ char * state_errmsg(State * state) {
   return state->errmsg;
 }
 
+/** Gets the state's currently active maze. */
+Maze * state_maze(State * state) {
+  return state->maze;
+}
+
+/** Sets the state's currently active maze. */
+Maze * state_maze_(State * state, Maze* maze) {
+  return state->maze = maze;
+}
+
 
 /** Registers an event source for this state */
 State * state_eventsource(State * state, ALLEGRO_EVENT_SOURCE * src)  {
@@ -255,45 +270,6 @@ int state_cameratrackthing(State * state, int thing_index) {
 int state_lockin_maplayer(State * state, int layer) {  
   return -1;
 }
-
-
-/* Loads a named tile map from the map folder. */
-/* This function is obsolete. Load tile maps though script / store now. 
-int state_loadtilemap_vpath(State * self, char * vpath) {
-  TilemapLoadExtra extra;
-  extra.area = self->area;
-  self->loadingmap = fifi_load_vpath(tilemap_fifi_load, &extra, vpath);
-  if(!self->loadingmap) return -1;
-  tilemap_free(self->nowmap);
-  self->nowmap = self->loadingmap;
-  return 0;
-}
-*/
-
-/* Sets the state current active actor to the thing with the given index.
- * Does not change if no such thing is found;
- */
-
-/* Obsolete.  The scripts manage the active actor now. 
-int state_actorindex_(State * self, int thing_index) {
-  Thing * thing;
-  thing = state_thing(self, thing_index);
-  if(!thing) return -1;
-  self->actor = thing;
-  return thing_index;
-}
-*/
-
-/* Returns the current active actor of the state. */
-/* Obsolete.  The scripts manage the active actor now. 
-Thing * state_actor(State * self) {
-  if(!self) return NULL;
-  return self->actor;
-}
-*/
-
-
-
 
 
 #define STATE_MODES 10
@@ -975,52 +951,6 @@ int global_state_show_area_(int show) {
   if (!state) return FALSE;
   return state->show_area = show;
 }
-
-/* Core functionality of Eruta, implemented on the state. */
-
-/* Ideas about starting the game and progressing
-* Normally, the game will have different modes. The game will start in 
-* intro mode, which automatically changes into main menu mode. 
-* From main menu mode a game may be loaded or a new game may be started. 
-* 
-* When the game starts, the generic startup and settings scripts must be loaded.
-* They influence the design of the main menu. 
-*  
-* To begin, we must implement the new game start. When a new game is started,
-* the game start script is loaded. Then, unless instructed differently, 
-* map number 0001 is loaded. As always, when a map is loaded, 
-* the map's corresponding script is loaded. The game has an area of "savable"
-* data which is initialized either by loading the game or by the new game script.   
-*  
-* Before the game is saved, the save game script is loaded. Likewise before 
-* the game is loaded the load game script is loaded. 
-* 
-* Once the game is running, the main game script is loaded and call-backs 
-* are used to communicate with it. This is the mechanism that allows part of the game 
-* to be implemented in script. 
-* 
-* Needed scripts so far: start.mrb, newgame.mrb, loadgame.mrb, savegame.mrb, 
-* main.mrb, and one map_0001.mrb, etc for every map. Other scripts can be loaded by 
-* these scripts for modulization, but only from the script directory.  
-*  
-*/
-
-
-
-/* Preloads a tile map from the given vpath. Returns the loaded map, or 
- NULL if not loaded. 
-Tilemap * state_preloadmap_vpath(State * state, const char * vpath) {
-  
-  return NULL;
-}
-*/ 
-
-/* Preloads a tile map with the given map number. Returns the loaded map, or 
- NULL if not loaded. 
-Tilemap * state_preloadmap_index(State * state, int index) {
-  return NULL;
-}
-*/
 
 
 /* Transforms a mask color of an image in storage into an alpha. */

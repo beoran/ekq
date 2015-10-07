@@ -9,7 +9,8 @@ endif
 
 
 # Source files of EKQ
-SRC_FILES  = src/bad.c
+SRC_FILES  = src/aldmg.c
+SRC_FILES += src/bad.c
 SRC_FILES += src/bevec.c
 SRC_FILES += src/brex.c
 SRC_FILES += src/bxml.c
@@ -22,6 +23,7 @@ SRC_FILES += src/event.c
 SRC_FILES += src/every.c
 SRC_FILES += src/flags.c
 SRC_FILES += src/fifi.c
+SRC_FILES += src/goc.c
 SRC_FILES += src/inli.c
 SRC_FILES += src/laytext.c
 SRC_FILES += src/maze.c
@@ -37,6 +39,7 @@ SRC_FILES += src/rh.c
 SRC_FILES += src/scegra.c
 SRC_FILES += src/ses.c
 SRC_FILES += src/silut.c
+SRC_FILES += src/sitef.c
 SRC_FILES += src/skybox.c
 SRC_FILES += src/sound.c
 SRC_FILES += src/sprite.c

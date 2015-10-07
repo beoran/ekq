@@ -405,6 +405,7 @@ TR_WRAP_B_BOOL(tr_show_mouse_cursor_, scegra_show_system_mouse_cursor)
 
 /* Initializes the functionality that Eruta exposes to Ruby. */
 int tr_init(mrb_state * mrb) {
+  
   // luaL_dostring(lua, "print 'Hello!' ");
   struct RClass *krn;
   struct RClass *pth;
@@ -416,6 +417,8 @@ int tr_init(mrb_state * mrb) {
   struct RClass *aud;
   struct RClass *cam;
   struct RClass *sky;
+  
+  mrb->ud = state_get();
   
   eru = mrb_define_module(mrb, "Eruta");
   

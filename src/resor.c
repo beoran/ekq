@@ -15,13 +15,14 @@
 #include <assert.h>
 
 
-/* typedef int ResorDestructor(Resor * self);  */
+/** typedef int ResorDestructor(Resor * self);  */
 
 struct Resor_ { 
   ResorKind             kind; 
   ResorData             data;
   ResorStatus           status;
   ResorDestructor     * free;
+  ResorSaver          * saver;
 };
 
 
@@ -102,6 +103,7 @@ Resor *  resor_init(Resor * self, ResorKind kind, ResorData data, ResorDestructo
   self->data    = data;
   self->free    = free;
   self->status  = RESOR_OK;
+  self->saver   = NULL;
   return self;
 }
 
@@ -430,6 +432,27 @@ bool resor_get_bitmap_format(Resor * self, int * value) {
 }
 
 
+/** Sets the current resource saver and returns the old one. */
+ResorSaver * resor_set_saver(Resor * resor, ResorSaver * saver) {
+  ResorSaver * old;
+  if (!resor) return NULL;
+  old           = resor->saver; 
+  resor->saver  = saver;
+  return old;
+}
+
+/** Gets the current resource saver or NULL if not set. */
+ResorSaver * resor_saver(Resor * resor) {
+  if (!resor) return NULL;
+  return resor->saver;
+}
+
+/** Saves a resource using the set resourcesaver. */
+bool resor_save(Resor * resor, const char *vpath, void * extra) {
+  if (!resor) return false;
+  if (!resor->saver) return false;
+  return resor->saver(resor, vpath, extra);
+}
 
 
 

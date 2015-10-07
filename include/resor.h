@@ -13,6 +13,7 @@ enum ResorKind_ {
   RESOR_OTHER         = 8,
   RESOR_TILEMAP       = 9,
   RESOR_MODEL         = 10,
+  RESOR_MAZE          = 11,
 };
 
 enum ResorStatus_ {
@@ -41,6 +42,9 @@ union ResorData_ {
 
 typedef int ResorDestructor(Resor * self); 
 typedef void* ResorLoader(const char * vpath, void * extra); 
+typedef int ResorSaver(Resor * self, const char * vpath, void * extra); 
+
+
 
 ALLEGRO_SAMPLE *resor_sample(Resor *self);
 ALLEGRO_AUDIO_STREAM *resor_audio_stream(Resor *self);
@@ -89,7 +93,9 @@ bool resor_get_font_line_height(Resor *self,int *value);
 bool resor_get_font_descent(Resor *self,int *value);
 bool resor_get_font_ascent(Resor *self,int *value);
 
-
+ResorSaver * resor_set_saver(Resor * resor, ResorSaver * saver);
+ResorSaver * resor_saver(Resor * resor);
+bool resor_save(Resor * resor, const char *vpath, void * extra);
 
 
 #endif /* RESOR_H_INCLUDED */

@@ -1,0 +1,100 @@
+#
+# Map files are in sitef format. In sitef, the first caharcter on the line 
+# determines the meaning. A - ends the record, one or more spaces or tabs start 
+# a multi line value. A # starts a comment. A unindented newline by itself is 
+# ignored. A \ starts an escaped value. A : starts a key that lasts # lasts up 
+# to the next : character on the same line, after which the value continues.. 
+# A + starts a value where the newline from the last line is ignored. 
+# Any other character continues the value on the last line. 
+#
+:id:COD
+:type:maze
+:name:Cave of Discovery
+:floors:1
+---
+:id:F01
+:type:floor
+:name:First Floor
+:layer:0
+
+# The map consists of ascii art grid cells of 7 wide and 5 high. 
+# The map must be indented. with 2 spaces, blank lines are ignored.
+#
+# The outline of the grid cells determines the wall type.
+# A . means "no wall", | or - is a normal wall, []  
+# The four corners may have a corner style: + is a normal corner
+# I is a pillared corner. / and \ are for slanting walls/roofs.
+# 
+# The wall may consist in stead of a horizontal or vertical 
+# combination of 3 characters to indicate special objects that replace 
+# a wall. The first character combination indicates the type of object.
+# For example, D99 means "Door number 99", E01 means Exit 01.
+# The door info should be provided in a different record.
+#
+# Inside the cell, on the top, any special objects inside the cell are 
+# described similarly as wall objects by a 3 character code, but with 
+# whitespaces left and right for readability.
+# Cell objects should be described in a different record after the floor info.
+# For example <U1 is a stair to the up and left, >D2 is a stair down and right.
+# There can be up to 3 objects in each cell.
+#  
+# All objects must be unique per maze. Sinvce the codes have 3 digits, but the
+# first one is for the type, there are at least 1269 objects possible per
+# type and per maze.
+
+:map:
+  .......+..............................................................
+  . >01 D.     ..     ..     ..     ..     ..     ..     ..     ..     .
+  .     1.     ..     ..     ..     ..     ..     ..     ..     ..     .
+  .     7.     ..     ..     ..     ..     ..     ..     ..     ..     .
+  .D99..................................................................
+  .......+..............................................................
+  .     ..     ..     ..     ..     ..     ..     ..     ..     ..     .
+  .     ..     ..     ..     ..     ..     ..     ..     ..     ..     .
+  .     ..     ..     ..     ..     ..     ..     ..     ..     ..     .
+  ......................................................................
+  .......+..............................................................
+  . >01 D.     ..     ..     ..     ..     ..     ..     ..     ..     .
+  .     1.     ..     ..     ..     ..     ..     ..     ..     ..     .
+  .     7.     ..     ..     ..     ..     ..     ..     ..     ..     .
+  .D99..................................................................  
+  .......+..............................................................  
+  .     ..     ..     ..     ..     ..     ..     ..     ..     ..     .    
+  .     ..     ..     ..     ..     ..     ..     ..     ..     ..     .
+  .     ..     ..     ..     ..     ..     ..     ..     ..     ..     .
+  ......................................................................
+  ......................................................................
+  .     ..     ..     ..     ..     ..     ..     ..     ..     ..     .
+  .     ..     ..     ..     ..     ..     ..     ..     ..     ..     .
+  .     ..     ..     ..     ..     ..     ..     ..     ..     ..     .
+  ......................................................................
+  ......................................................................  
+  .     ..     ..     ..     ..     ..     ..     ..     ..     ..     .
+  .     ..     ..     ..     ..     ..     ..     ..     ..     ..     .
+  .     ..     ..     ..     ..     ..     ..     ..     ..     ..     .
+  ......................................................................
+  ......................................................................  
+  .     ..     ..     ..     ..     ..     ..     ..     ..     ..     .  
+  .     ..     ..     ..     ..     ..     ..     ..     ..     ..     .  
+  .     ..     ..     ..     ..     ..     ..     ..     ..     ..     .  
+  ......................................................................  
+  ......................................................................
+  .     ..     ..     ..     ..     ..     ..     ..     ..     ..     .
+  .     ..     ..     ..     ..     ..     ..     ..     ..     ..     .
+  .     ..     ..     ..     ..     ..     ..     ..     ..     ..     .
+  ......................................................................
+  ......................................................................  
+  .     ..     ..     ..     ..     ..     ..     ..     ..     ..     .  
+  .     ..     ..     ..     ..     ..     ..     ..     ..     ..     .  
+  .     ..     ..     ..     ..     ..     ..     ..     ..     ..     .  
+  ......................................................................  
+  ......................................................................
+  .     ..     ..     ..     ..     ..     ..     ..     ..     ..     .
+  .     ..     ..     ..     ..     ..     ..     ..     ..     ..     .
+  .     ..     ..     ..     ..     ..     ..     ..     ..     ..     .
+  ......................................................................
+
+:theme:sanctuary
+---
+
+
